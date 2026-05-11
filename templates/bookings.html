@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Bookings - AgroSmart{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>Your Bookings</h2>
+    <p>Review and manage your machinery bookings.</p>
+</section>
+
+<div class="card">
+    {% if bookings %}
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Machine</th>
+                        <th>Image</th>
+                        <th>Location</th>
+                        <th>Duration</th>
+                        <th>Total Cost</th>
+                        <th>Status</th>
+                        <th>Booked On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in bookings %}
+                        <tr>
+                            <td>{{ booking.machine_name }}</td>
+                            <td>
+                                {% if booking.machine_image %}
+                                    <img src="/static/{{ booking.machine_image }}" alt="{{ booking.machine_name }}" class="machine-image">
+                                {% else %}
+                                    <img src="https://via.placeholder.com/90?text=Machine" alt="No image" class="machine-image">
+                                {% endif %}
+                            </td>
+                            <td>{{ booking.machine_location }}</td>
+                            <td>{{ booking.start_date }} to {{ booking.end_date }}</td>
+                            <td>₹{{ booking.total_cost }}</td>
+                            <td>
+                                <span class="status status-{{ booking.status }}">
+                                    {{ booking.status|title }}
+                                </span>
+                            </td>
+                            <td>{{ booking.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                {% if booking.status in ['pending', 'approved'] %}
+                                    <form method="POST" action="/cancel_booking/{{ booking.id }}" style="display: inline;">
+                                        <button type="submit" class="btn-cancel" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel</button>
+                                    </form>
+                                    {% if booking.status == 'approved' %}
+                                        <a href="/booking/{{ booking.id }}/track" class="button button-secondary" style="margin-left: 0.5rem;">Track Vehicle</a>
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% if booking.status == 'approved' %}
+                            <tr class="notes-row">
+                                <td colspan="8">
+                                    <strong>Assigned Admin:</strong> {{ booking.admin_phone or 'Not provided' }}
+                                    {% if booking.admin_vehicle_number %}
+                                        · <strong>Vehicle:</strong> {{ booking.admin_vehicle_number }}
+                                    {% endif %}
+                                    {% if booking.admin_photo %}
+                                        <div class="admin-photo-inline">
+                                            <img src="/static/{{ booking.admin_photo }}" alt="Admin photo" class="admin-photo-small">
+                                        </div>
+                                    {% endif %}
+                                    {% if booking.admin_location %}
+                                        <div><strong>Admin base:</strong> {{ booking.admin_location }}</div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                        {% if booking.notes and booking.status != 'approved' %}
+                            <tr class="notes-row">
+                                <td colspan="8">
+                                    <strong>Notes:</strong> {{ booking.notes }}
+                                </td>
+                            </tr>
+                        {% elif booking.notes and booking.status == 'approved' %}
+                            <tr class="notes-row">
+                                <td colspan="8">
+                                    <strong>Notes:</strong> {{ booking.notes }}
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>You have no bookings yet. <a href="/machinery">Browse available machinery</a></p>
+    {% endif %}
+</div>
+
+<style>
+.status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.status-pending { background: #fff3cd; color: #856404; }
+.status-approved { background: #d4edda; color: #155724; }
+.status-rejected { background: #f8d7da; color: #721c24; }
+.status-cancelled { background: #e2e3e5; color: #383d41; }
+.status-completed { background: #d1ecf1; color: #0c5460; }
+
+.btn-cancel {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.btn-cancel:hover {
+    background: #c82333;
+}
+
+.notes-row {
+    background: #f8f9fa;
+}
+
+.notes-row td {
+    padding: 0.5rem !important;
+    font-size: 0.9rem;
+}
+
+.admin-photo-small {
+    width: 42px;
+    height: 42px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-left: 0.75rem;
+    vertical-align: middle;
+}
+</style>
+{% endblock %}

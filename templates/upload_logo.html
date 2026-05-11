@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Logo - AgroSmart{% endblock %}
+
+{% block content %}
+<div class="form-panel">
+    <h2>Upload App Logo</h2>
+    {% if message %}
+        <div class="success-message">{{ message }}</div>
+    {% endif %}
+    <form method="POST" enctype="multipart/form-data">
+        <label for="logo">Choose logo image</label>
+        <input type="file" name="logo" id="logo" accept="image/*" required>
+        <button class="button" type="submit">Upload Logo</button>
+    </form>
+    <p>Accepted file types: PNG, JPG, JPEG, GIF, SVG, WebP.</p>
+</div>
+{% endblock %}

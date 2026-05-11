@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - AgroSmart{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>Farmer Dashboard</h2>
+    <p>Welcome back, {{ user or 'Guest' }}. Use the tools below to manage your farm operations.</p>
+</section>
+
+<section class="card-grid">
+    <div class="card welcome-card">
+        {% if profile_photo %}
+            <img src="{{ profile_photo }}" alt="Profile photo" class="dashboard-avatar">
+        {% endif %}
+        <h3>Welcome, {{ user }}</h3>
+        <p>Your registered location is <strong>{{ user_location }}</strong>.</p>
+        <p><a href="/profile">View profile</a> · <a href="/bookings">My Bookings</a></p>
+    </div>
+    <a class="card" href="/machinery">
+        <span class="task-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M20.4 13.5l-1.2-.7c.1-.4.1-.8.1-1.2s0-.8-.1-1.2l1.2-.7c.3-.2.4-.6.2-.9l-1.4-2.4c-.2-.3-.6-.4-.9-.2l-1.4.8c-.6-.5-1.3-.8-2.1-.9L14.5 3h-5l-.3 1.8c-.8.1-1.5.4-2.1.9l-1.4-.8c-.3-.2-.7-.1-.9.2L2.8 9c-.2.3-.1.7.2.9l1.2.7c-.1.4-.1.8-.1 1.2s0 .8.1 1.2l-1.2.7c-.3.2-.4.6-.2.9l1.4 2.4c.2.3.6.4.9.2l1.4-.8c.6.5 1.3.8 2.1.9l.3 1.8h5l.3-1.8c.8-.1 1.5-.4 2.1-.9l1.4.8c.3.2.7.1.9-.2l1.4-2.4c.2-.3.1-.7-.2-.9zM12 15.5c-1.9 0-3.5-1.6-3.5-3.5S10.1 8.5 12 8.5s3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5z"></path></svg>
+        </span>
+        <h3>Machinery Rental</h3>
+        <p>Reserve tractors, harvesters, and farm equipment.</p>
+    </a>
+    <a class="card" href="/prices">
+        <span class="task-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 17h2v-7H4v7zm4 0h2V7H8v10zm4 0h2v-4h-2v4zm4 0h2V3h-2v14zm4 0h2v-9h-2v9z"></path></svg>
+        </span>
+        <h3>Crop Prices</h3>
+        <p>Compare market rates and sell at the best price.</p>
+    </a>
+    <a class="card" href="/map">
+        <span class="task-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5S10.6 6.5 12 6.5 14.5 7.6 14.5 9 13.4 11.5 12 11.5z"></path></svg>
+        </span>
+        <h3>Market Map</h3>
+        <p>View market locations and farm zones on an interactive map.</p>
+    </a>
+    <a class="card" href="/weather">
+        <span class="task-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M6 19h12c1.1 0 2-.9 2-2 0-2.2-1.8-4-4-4-.4 0-.8.1-1.2.2C14.8 12 13.5 11 12 11s-2.8 1-3.8 2.2c-.4-.1-.8-.2-1.2-.2-2.2 0-4 1.8-4 4 0 1.1.9 2 2 2zM16 14c1.1 0 2 .9 2 2s-.9 2-2 2H8c-1.1 0-2-.9-2-2s.9-2 2-2h8z"></path></svg>
+        </span>
+        <h3>Weather</h3>
+        <p>Check current weather conditions and forecasts.</p>
+    </a>
+    <a class="card" href="/motor">
+        <h3>Motor Control</h3>
+        <p>Simulate remote motor controls for farm equipment.</p>
+    </a>
+    <a class="card" href="/drone">
+        <h3>Drone Control</h3>
+        <p>Operate drone tasks and crop spraying from one panel.</p>
+    </a>
+    <a class="card" href="/cctv">
+        <h3>CCTV Monitoring</h3>
+        <p>View live camera feeds and monitor farm security.</p>
+    </a>
+</section>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Machinery Rental - AgroSmart{% endblock %}
+
+{% block content %}
+<section class="panel machinery-intro">
+    <div>
+        <p class="eyebrow">Machinery Rental</p>
+        <h2>Rent tractors, harvesters and plough machines for every field task</h2>
+        <p>Choose reliable agricultural equipment with one-click booking. Each item is shown with a clear image, description and Book Now action for a smooth rental experience.</p>
+    </div>
+</section>
+
+<section class="rental-grid">
+    <article class="rental-card">
+        <img src="https://assets.tractorguru.in/tractor-guru/tractors/powertrac-434-plus.webp?width=214" alt="Powerful Tractor">
+        <div class="rental-card-body">
+            <span class="rental-tag">Tractor Rental</span>
+            <h3>Powerful Tractor</h3>
+            <p>Strong tractors for ploughing, hauling and powering attachments across your fields.</p>
+            <a href="/book/1" class="button">Book Now</a>
+        </div>
+    </article>
+
+    <article class="rental-card">
+        <img src="https://static.agriculture-machine.com/wp-content/uploads/2023/11/combine-harvester-for-sale.webp" alt="Harvester machine">
+        <div class="rental-card-body">
+            <span class="rental-tag">Harvester Rental</span>
+            <h3>Efficient Harvester</h3>
+            <p>Harvest with ease using modern combines built for high efficiency and large crop loads.</p>
+            <a href="/book/2" class="button">Book Now</a>
+        </div>
+    </article>
+
+    <article class="rental-card">
+        <img src="https://5.imimg.com/data5/ANDROID/Default/2022/7/QE/NX/EZ/21184898/product-jpeg-500x500.jpg" alt="Heavy plough machine">
+        <div class="rental-card-body">
+            <span class="rental-tag">Plough Machine</span>
+            <h3>Heavy Plough</h3>
+            <p>Turn soil quickly and prepare your land for planting with a dependable plough machine.</p>
+            <a href="/book/3" class="button">Book Now</a>
+        </div>
+    </article>
+
+    <article class="rental-card">
+        <img src="https://5.imimg.com/data5/SELLER/Default/2024/5/417356262/AF/NT/VN/174709/power-tiller-1000x1000.png" alt="Cultivator machine">
+        <div class="rental-card-body">
+            <span class="rental-tag">Cultivator Rental</span>
+            <h3>Field Cultivator</h3>
+            <p>Prepare seedbeds and control weeds with a cultivator designed for even soil cultivation.</p>
+            <a href="/book/4" class="button">Book Now</a>
+        </div>
+    </article>
+
+    <article class="rental-card">
+        <img src="https://m.media-amazon.com/images/I/71ftZ+YlAGL._AC_SL1000_.jpg" alt="Precision Seeder">
+        <div class="rental-card-body">
+            <span class="rental-tag">Seeder Rental</span>
+            <h3>Precision Seeder</h3>
+            <p>Plant seeds accurately in rows with a seeder built for efficient, modern farming.</p>
+            <a href="/book/5" class="button">Book Now</a>
+        </div>
+    </article>
+</section>
+
+<section class="panel">
+    <h2>Available Machinery Listings</h2>
+    <p>Browse the full fleet and reserve the equipment you need right now.</p>
+</section>
+
+{% if machines %}
+<div class="card">
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Price per day</th>
+                    <th>Owner Contact</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for machine in machines %}
+                    <tr>
+                        <td>
+                            {% if machine.image_url %}
+                                <img src="/static/{{ machine.image_url }}" alt="{{ machine.name }}" class="machine-image">
+                            {% else %}
+                                <img src="https://via.placeholder.com/90?text=Machine" alt="No image" class="machine-image">
+                            {% endif %}
+                        </td>
+                        <td>{{ machine.name }}</td>
+                        <td>{{ machine.location }}</td>
+                        <td>{{ machine.price_per_day }}</td>
+                        <td>{{ machine.owner_contact }}</td>
+                        <td><a class="button button-secondary" href="/book/{{ machine.id }}">Book</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.rental-card .button').forEach(function(button) {
+            button.addEventListener('click', function(event) {
+                var title = this.closest('.rental-card').querySelector('h3').textContent;
+                console.log('Book Now clicked for', title);
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Verify OTP - AgroSmart{% endblock %}
+
+{% block content %}
+<section class="form-panel">
+    <div class="panel">
+        <h2>Verify Your Phone</h2>
+        <p>An OTP has been sent to {{ phone }}. Enter it below to complete registration.</p>
+        {% if error %}
+            <p class="form-error">{{ error }}</p>
+        {% endif %}
+        {% if otp_demo %}
+            <p><em>For demo purposes, your OTP is {{ otp_demo }}</em></p>
+        {% endif %}
+        <form method="POST" action="/verify-otp">
+            <label for="otp">OTP Code</label>
+            <input type="text" id="otp" name="otp" placeholder="Enter OTP" required>
+            <button class="button" type="submit">Verify OTP</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

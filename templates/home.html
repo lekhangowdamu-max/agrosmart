@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}AgroSmart Home{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div>
+        <p class="eyebrow">Smart farming for modern agriculture</p>
+        <h1>Build a better farm with AgroSmart</h1>
+        <p>Manage machinery rentals, crop prices, maps, weather monitoring and remote farm controls in one unified dashboard.</p>
+        <div class="hero-actions">
+            <a class="button" href="/login">Login</a>
+            <a class="button button-secondary" href="/register">Register</a>
+        </div>
+    </div>
+    <div class="hero-image">
+        <img src="https://img.freepik.com/premium-photo/agriculture-drone-fly-sprayed-fertilizer-rice-fields-drone-is-flying-rice-field_1176045-8169.jpg" alt="Smart agriculture dashboard">
+    </div>
+</section>
+
+<section class="ad-banner">
+    <div class="ad-banner-content">
+        <p class="eyebrow">Farming partnership news</p>
+        <h2>Smart agriculture offers for your farm</h2>
+        <p>Check out the latest seed, fertilizer and irrigation deals designed to help farmers grow more with less. These farming ads bring the right equipment and advisory services to your fields.</p>
+        <a class="button" href="/prices">View Farm Deals</a>
+    </div>
+    <div class="ad-banner-image">
+        <img src="https://images.pexels.com/photos/1114697/pexels-photo-1114697.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Farming advertisement">
+    </div>
+</section>
+
+<section class="feature-grid">
+    <div class="card card-machinery">
+        <span class="task-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M20.6 5.2l-8-3.2c-.3-.1-.6-.1-.9 0L3.4 5.2C3.1 5.3 2.9 5.7 2.9 6.1v11.8c0 .4.2.8.5 1l8 3.2c.3.1.6.1.9 0l8-3.2c.3-.1.5-.5.5-1V6.1c0-.4-.2-.8-.5-1zM12 5l6 2.4v9.2l-6 2.4-6-2.4V7.4L12 5z"></path></svg>
+        </span>
+        <h3>Machinery Rental</h3>
+        <p>Book farm equipment and manage machine availability quickly.</p>
+    </div>
+    <div class="card card-prices">
+        <span class="task-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zm0-8h14V7H7v2z"></path></svg>
+        </span>
+        <h3>Crop Prices</h3>
+        <p>See the latest market prices and choose the best selling location.</p>
+    </div>
+    <div class="card card-maps">
+        <span class="task-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5S10.6 6.5 12 6.5 14.5 7.6 14.5 9 13.4 11.5 12 11.5z"></path></svg>
+        </span>
+        <h3>Live Maps</h3>
+        <p>Track key market zones, machinery hubs and farm locations.</p>
+    </div>
+    <div class="card card-weather">
+        <span class="task-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M6 19h12c1.1 0 2-.9 2-2 0-2.2-1.8-4-4-4-.4 0-.8.1-1.2.2C14.8 12 13.5 11 12 11s-2.8 1-3.8 2.2c-.4-.1-.8-.2-1.2-.2-2.2 0-4 1.8-4 4 0 1.1.9 2 2 2zM16 14c1.1 0 2 .9 2 2s-.9 2-2 2H8c-1.1 0-2-.9-2-2s.9-2 2-2h8z"></path></svg>
+        </span>
+        <h3>Weather Overview</h3>
+        <p>Monitor farm weather conditions and make better decisions.</p>
+    </div>
+</section>
+{% endblock %}

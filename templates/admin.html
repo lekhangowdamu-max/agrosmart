@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - AgroSmart{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>Admin Dashboard</h2>
+    <p>Overview of users, machines, bookings, and market entries.</p>
+</section>
+
+<section class="card-grid">
+    <div class="card">
+        <h3>Users</h3>
+        <p>{{ user_count }}</p>
+    </div>
+    <div class="card">
+        <h3>Machines</h3>
+        <p>{{ machinery_count }}</p>
+    </div>
+    <div class="card">
+        <h3>Market Entries</h3>
+        <p>{{ price_count }}</p>
+    </div>
+    <div class="card">
+        <h3><a href="/admin/bookings" style="color: inherit; text-decoration: none;">Bookings</a></h3>
+        <p>{{ booking_count }} total</p>
+        {% if pending_bookings > 0 %}
+            <p style="color: #856404; font-weight: bold;">{{ pending_bookings }} pending approval</p>
+        {% endif %}
+    </div>
+</section>
+
+<section class="panel" style="margin-top:1.5rem;">
+    <h3>Most Booked Machines</h3>
+    {% if top_machines %}
+        <ul class="location-list">
+            {% for item in top_machines %}
+                <li>{{ item.machine_name }} — {{ item.booking_count }} bookings</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No bookings yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

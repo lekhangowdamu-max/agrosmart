@@ -1,0 +1,684 @@
+{% extends "base.html" %}
+
+{% block title %}Drone Control - AgroSmart{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>Drone Remote Control</h2>
+    <p>Use the AgroSmart drone cockpit to manage live telemetry, flight commands, waypoint navigation, and crop monitoring directly from your website.</p>
+</section>
+
+<div class="panel drone-grid">
+    <div class="drone-column">
+        <div class="drone-card">
+            <div class="drone-card-heading">
+                <div>
+                    <span class="tag">Live feed</span>
+                    <h3>Camera stream simulation</h3>
+                </div>
+            </div>
+            <div class="video-panel">
+                <div class="video-overlay">
+                    <div class="video-label">Live Crop Scan</div>
+                    <div class="ai-box">AI object detection overlay</div>
+                </div>
+            </div>
+            <div class="action-group">
+                <button type="button" id="monitorBtn" class="button button-secondary">Start Crop Monitoring</button>
+                <button type="button" id="sprayBtn" class="button button-secondary">Spray Mode</button>
+            </div>
+        </div>
+
+        <div class="drone-card">
+            <div class="drone-card-heading">
+                <div>
+                    <span class="tag">Field map</span>
+                    <h3>Waypoint navigation</h3>
+                </div>
+            </div>
+            <div id="droneMap" class="map-widget"></div>
+            <p class="map-note">Click anywhere on the map to set a waypoint for the drone.</p>
+            <div id="routeSummary" class="route-summary">No active route</div>
+        </div>
+    </div>
+
+    <div class="drone-column">
+        <div class="drone-card device-card">
+            <div class="drone-card-heading">
+                <div>
+                    <span class="tag">Device</span>
+                    <h3>Drone pairing & profile</h3>
+                </div>
+            </div>
+            <div class="form-grid">
+                <label>
+                    Pilot name
+                    <input id="operatorName" type="text" placeholder="Your name" />
+                </label>
+                <label>
+                    Drone name
+                    <input id="droneName" type="text" placeholder="Drone model" />
+                </label>
+                <label>
+                    Bluetooth name
+                    <input id="bluetoothName" type="text" placeholder="BT device name" />
+                </label>
+            </div>
+            <div class="control-actions">
+                <button type="button" id="saveDeviceInfoBtn" class="button button-primary">Save Device Info</button>
+                <button type="button" id="scanBluetoothBtn" class="button">Scan Bluetooth Device</button>
+            </div>
+            <div class="device-summary">
+                <p><strong>Paired device:</strong> <span id="pairedDevice">None</span></p>
+                <p><strong>Connection:</strong> <span id="connectionStatus">Disconnected</span></p>
+            </div>
+            <div class="device-list-card">
+                <h4>Available Bluetooth devices</h4>
+                <ul id="bluetoothDeviceList"></ul>
+            </div>
+        </div>
+
+        <div class="drone-card">
+            <div class="drone-card-heading">
+                <div>
+                    <span class="tag">Flight controls</span>
+                    <h3>Remote command panel</h3>
+                </div>
+            </div>
+            <div class="control-grid">
+                <button type="button" data-direction="forward" class="dir-btn">Rotate Forward</button>
+                <button type="button" data-direction="backward" class="dir-btn">Rotate Backward</button>
+                <button type="button" data-direction="left" class="dir-btn">Rotate Left</button>
+                <button type="button" data-direction="right" class="dir-btn">Rotate Right</button>
+            </div>
+            <div class="slider-group">
+                <label>Altitude: <span id="altitudeValue">0</span>m</label>
+                <input id="altitudeSlider" type="range" min="0" max="500" value="0" />
+            </div>
+            <div class="slider-group">
+                <label>Speed: <span id="speedValue">0</span>%</label>
+                <input id="speedSlider" type="range" min="0" max="100" value="0" />
+            </div>
+            <div class="control-actions">
+                <button type="button" id="takeoffBtn" class="button button-primary">Takeoff</button>
+                <button type="button" id="landBtn" class="button">Land</button>
+                <button type="button" id="emergencyBtn" class="button button-danger">Emergency Stop</button>
+            </div>
+        </div>
+
+        <div class="drone-card telemetry-card">
+            <div class="drone-card-heading">
+                <div>
+                    <span class="tag">Telemetry</span>
+                    <h3>Live drone status</h3>
+                </div>
+            </div>
+            <div class="telemetry-grid">
+                <div class="telemetry-item">
+                    <p>Battery</p>
+                    <strong><span id="batteryValue">100</span>%</strong>
+                </div>
+                <div class="telemetry-item">
+                    <p>Signal</p>
+                    <strong><span id="signalValue">100</span>%</strong>
+                </div>
+                <div class="telemetry-item">
+                    <p>Altitude</p>
+                    <strong><span id="altitudeStat">0</span>m</strong>
+                </div>
+                <div class="telemetry-item">
+                    <p>Speed</p>
+                    <strong><span id="speedStat">0</span>%</strong>
+                </div>
+                <div class="telemetry-item">
+                    <p>Latitude</p>
+                    <strong><span id="latValue">26.912400</span></strong>
+                </div>
+                <div class="telemetry-item">
+                    <p>Longitude</p>
+                    <strong><span id="lonValue">75.787300</span></strong>
+                </div>
+                <div class="telemetry-item full-width">
+                    <p>Status</p>
+                    <strong><span id="statusValue">grounded</span></strong>
+                </div>
+                <div class="telemetry-item full-width">
+                    <p>Mode</p>
+                    <strong><span id="modeValue">idle</span></strong>
+                </div>
+            </div>
+            <div class="log-panel">
+                <h4>Recent logs</h4>
+                <ul id="logList"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.drone-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.15fr;
+    gap: 1rem;
+}
+.drone-column {
+    display: grid;
+    gap: 1rem;
+}
+.drone-card {
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+}
+.drone-card-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.tag {
+    display: inline-flex;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(52, 211, 153, 0.15);
+    color: #a7f3d0;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.video-panel {
+    position: relative;
+    min-height: 320px;
+    border-radius: 1.5rem;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 1), rgba(17, 24, 39, 0.98));
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+}
+.video-overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 25%, rgba(34, 197, 94, 0.18), transparent 30%),
+      radial-gradient(circle at 80% 20%, rgba(14, 165, 233, 0.18), transparent 25%),
+      linear-gradient(180deg, rgba(15, 23, 42, 1), rgba(15, 23, 42, 0.9));
+}
+.video-label {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.9);
+    color: #d1fae5;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+}
+.ai-box {
+    position: absolute;
+    bottom: 2rem;
+    left: 1rem;
+    width: calc(100% - 2rem);
+    padding: 1rem;
+    border-radius: 1rem;
+    border: 1px dashed rgba(56, 189, 248, 0.55);
+    color: #cbe7ff;
+    backdrop-filter: blur(4px);
+}
+.action-group,
+.control-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+.map-widget {
+    min-height: 320px;
+    border-radius: 1.25rem;
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+}
+.map-note {
+    margin-top: 0.85rem;
+    color: #94a3b8;
+    font-size: 0.95rem;
+}
+.route-summary {
+    margin-top: 0.75rem;
+    color: #d1fae5;
+    font-size: 0.95rem;
+    padding: 0.85rem 1rem;
+    background: rgba(15, 23, 42, 0.88);
+    border-radius: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+}
+.control-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+.dir-btn {
+    padding: 1rem 0;
+    border-radius: 1rem;
+    background: rgba(15, 23, 42, 0.85);
+    color: #fff;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+.dir-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(52, 211, 153, 0.12);
+}
+.slider-group {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+.slider-group label {
+    display: flex;
+    justify-content: space-between;
+    color: #cbd5e1;
+}
+input[type="range"] {
+    width: 100%;
+    accent-color: #34d399;
+}
+.button-primary {
+    background: #22c55e;
+    color: #0f172a;
+}
+.button-danger {
+    background: #ef4444;
+    color: #fff;
+}
+.telemetry-card {
+    padding-bottom: 1rem;
+}
+.telemetry-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.telemetry-item {
+    padding: 1rem;
+    border-radius: 1.25rem;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+}
+.form-grid {
+    display: grid;
+    gap: 0.85rem;
+    margin-bottom: 1rem;
+}
+.form-grid label {
+    display: grid;
+    gap: 0.45rem;
+    color: #cbd5e1;
+    font-size: 0.95rem;
+}
+.form-grid input {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(15, 23, 42, 0.9);
+    color: #fff;
+}
+.device-summary {
+    padding: 1rem;
+    margin-top: 1rem;
+    border-radius: 1rem;
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    color: #e2e8f0;
+}
+.device-summary p {
+    margin: 0.35rem 0;
+    font-size: 0.95rem;
+}
+.device-list-card {
+    margin-top: 1rem;
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 1rem;
+    padding: 1rem;
+}
+.device-list-card h4 {
+    margin: 0 0 0.75rem;
+    color: #f8fafc;
+    font-size: 1rem;
+}
+.device-list-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.5rem;
+}
+.device-list-card li {
+    padding: 0.85rem 1rem;
+    border-radius: 0.95rem;
+    background: rgba(30, 41, 59, 0.85);
+    color: #cbd5e1;
+    font-size: 0.95rem;
+    border: 1px solid rgba(148, 163, 184, 0.08);
+}
+.telemetry-item p {
+    margin: 0 0 0.5rem;
+    color: #94a3b8;
+    font-size: 0.88rem;
+}
+.telemetry-item strong {
+    color: #fff;
+    font-size: 1.1rem;
+}
+.full-width {
+    grid-column: span 2;
+}
+.log-panel {
+    margin-top: 1.5rem;
+}
+.log-panel h4 {
+    margin-bottom: 0.75rem;
+    color: #f8fafc;
+}
+.log-panel ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.75rem;
+}
+.log-panel li {
+    padding: 0.9rem 1rem;
+    border-radius: 1rem;
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    color: #cbd5e1;
+    font-size: 0.95rem;
+}
+@media (max-width: 1200px) {
+    .drone-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const stateUrl = "/drone/state";
+const commandUrl = "/drone/command";
+let droneMap;
+let droneMarker;
+let waypointMarker;
+let routeLayer = null;
+let routeSummary = null;
+
+const marketLocations = [
+    { name: 'Bangalore Market', coords: [12.9716, 77.5946] },
+    { name: 'Hyderabad Market', coords: [17.3850, 78.4867] },
+    { name: 'Mumbai Port Market', coords: [19.0760, 72.8777] },
+    { name: 'Chennai Coastal Market', coords: [13.0827, 80.2707] },
+    { name: 'Delhi Wholesale Market', coords: [28.7041, 77.1025] },
+    { name: 'Kolkata Central Market', coords: [22.5726, 88.3639] },
+    { name: 'Pune Agri Hub', coords: [18.5204, 73.8567] },
+    { name: 'Ahmedabad Trade Center', coords: [23.0225, 72.5714] }
+];
+
+function sendDroneCommand(action, payload = {}) {
+    fetch(commandUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, payload }),
+    });
+}
+
+function refreshTelemetry() {
+    fetch(stateUrl)
+        .then((response) => response.json())
+        .then((data) => {
+            if (!data.success) return;
+            const state = data.state;
+            document.getElementById("batteryValue").innerText = Math.round(state.battery);
+            document.getElementById("signalValue").innerText = Math.round(state.signal);
+            document.getElementById("altitudeStat").innerText = Math.round(state.altitude);
+            document.getElementById("speedStat").innerText = Math.round(state.speed);
+            document.getElementById("latValue").innerText = state.latitude.toFixed(6);
+            document.getElementById("lonValue").innerText = state.longitude.toFixed(6);
+            document.getElementById("statusValue").innerText = state.status;
+            document.getElementById("modeValue").innerText = state.mode;
+            document.getElementById("altitudeValue").innerText = Math.round(state.altitude);
+            document.getElementById("speedValue").innerText = Math.round(state.speed);
+            document.getElementById("altitudeSlider").value = Math.round(state.altitude);
+            document.getElementById("speedSlider").value = Math.round(state.speed);
+
+            if (droneMarker) {
+                const droneLatLng = [state.latitude, state.longitude];
+                droneMarker.setLatLng(droneLatLng);
+                droneMarker.bindPopup(`Drone • ${state.status} • ${state.mode}`).openPopup();
+                if (!droneMap.getBounds().contains(droneLatLng)) {
+                    droneMap.panTo(droneLatLng, { animate: true, duration: 0.8 });
+                }
+            }
+
+            if (state.waypoint) {
+                const wpLatLng = [state.waypoint.latitude, state.waypoint.longitude];
+                if (!waypointMarker) {
+                    waypointMarker = L.marker(wpLatLng, { title: "Waypoint" }).addTo(droneMap);
+                } else {
+                    waypointMarker.setLatLng(wpLatLng);
+                }
+                drawRouteToWaypoint(wpLatLng);
+            } else {
+                if (waypointMarker) {
+                    droneMap.removeLayer(waypointMarker);
+                    waypointMarker = null;
+                }
+                clearRoute();
+            }
+
+            const logList = document.getElementById("logList");
+            logList.innerHTML = "";
+            state.logs.slice(0, 6).forEach((entry) => {
+                const node = document.createElement("li");
+                node.textContent = `${new Date(entry.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} — ${entry.event}`;
+                logList.appendChild(node);
+            });
+        })
+        .catch(() => {
+            console.warn("Unable to refresh drone telemetry.");
+        });
+}
+
+function initializeMap() {
+    const defaultCenter = [26.9124, 75.7873];
+    droneMap = L.map("droneMap", { scrollWheelZoom: true }).setView(defaultCenter, 15);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(droneMap);
+
+    marketLocations.forEach(location => {
+        L.marker(location.coords)
+            .addTo(droneMap)
+            .bindPopup(`<strong>${location.name}</strong>`);
+    });
+
+    droneMarker = L.marker(defaultCenter, { title: "Drone" }).addTo(droneMap).bindPopup("Drone position");
+
+    droneMap.on("click", function (event) {
+        sendDroneCommand("setWaypoint", {
+            latitude: event.latlng.lat,
+            longitude: event.latlng.lng,
+        });
+        const droneCenter = droneMarker.getLatLng();
+        drawRouteToWaypoint([event.latlng.lat, event.latlng.lng], droneCenter);
+    });
+}
+
+function drawRouteToWaypoint(waypointLatLng, droneCenter = null) {
+    if (!droneMap) return;
+    if (!droneCenter) {
+        droneCenter = droneMarker.getLatLng();
+    }
+    const routeLatLngs = [droneCenter, L.latLng(waypointLatLng[0], waypointLatLng[1])];
+    if (routeLayer) {
+        routeLayer.setLatLngs(routeLatLngs);
+    } else {
+        routeLayer = L.polyline(routeLatLngs, { color: '#34d399', weight: 4, opacity: 0.85, dashArray: '8,6' }).addTo(droneMap);
+    }
+    const distance = droneCenter.distanceTo(routeLatLngs[1]);
+    const heading = Math.round((Math.atan2(waypointLatLng[1] - droneCenter.lng, waypointLatLng[0] - droneCenter.lat) * 180 / Math.PI + 360) % 360);
+    if (routeSummary) {
+        routeSummary.innerHTML = `<strong>Route:</strong> ${distance.toFixed(1)} m · Heading ${heading}°`;
+    }
+}
+
+function clearRoute() {
+    if (routeLayer) {
+        droneMap.removeLayer(routeLayer);
+        routeLayer = null;
+    }
+    if (routeSummary) {
+        routeSummary.innerHTML = 'No active route';
+    }
+}
+
+function updateDeviceInfoDisplay(info) {
+    if (!info) return;
+    document.getElementById("operatorName").value = info.userName || "";
+    document.getElementById("droneName").value = info.droneName || "";
+    document.getElementById("bluetoothName").value = info.bluetoothName || "";
+    document.getElementById("pairedDevice").innerText = info.bluetoothName || "None";
+    document.getElementById("connectionStatus").innerText = info.bluetoothName ? "Paired" : "Disconnected";
+}
+
+function fetchSavedDeviceInfo() {
+    fetch("/drone/device-info")
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                updateDeviceInfoDisplay(data.info);
+            }
+        })
+        .catch(() => {
+            console.warn("Unable to load saved drone device info.");
+        });
+}
+
+function saveDeviceInfo() {
+    const payload = {
+        userName: document.getElementById("operatorName").value.trim(),
+        droneName: document.getElementById("droneName").value.trim(),
+        bluetoothName: document.getElementById("bluetoothName").value.trim(),
+    };
+
+    fetch("/drone/device-info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                updateDeviceInfoDisplay(data.info);
+                addLog(`Device info saved for ${payload.userName || 'operator'}`);
+            }
+        })
+        .catch(() => {
+            console.warn("Unable to save device info.");
+        });
+}
+
+let connectedBluetoothDevice = null;
+let knownBluetoothDevices = [];
+
+function displayBluetoothDevices() {
+    const list = document.getElementById("bluetoothDeviceList");
+    list.innerHTML = "";
+    if (knownBluetoothDevices.length === 0) {
+        list.innerHTML = '<li>No Bluetooth devices scanned yet.</li>';
+        return;
+    }
+    knownBluetoothDevices.forEach((device) => {
+        const li = document.createElement("li");
+        li.textContent = `${device.name || 'Unnamed device'} (${device.id || 'no id'})`;
+        list.appendChild(li);
+    });
+}
+
+async function scanBluetoothDevice() {
+    if (!navigator.bluetooth) {
+        alert("Bluetooth is not supported in this browser. Please use Chrome or Edge on localhost or HTTPS.");
+        return;
+    }
+
+    try {
+        const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
+        knownBluetoothDevices = [device, ...knownBluetoothDevices.filter((d) => d.id !== device.id)];
+        displayBluetoothDevices();
+        connectedBluetoothDevice = device;
+        document.getElementById("pairedDevice").innerText = device.name || device.id;
+        document.getElementById("connectionStatus").innerText = "Paired";
+        addLog(`Bluetooth device selected: ${device.name || device.id}`);
+
+        if (device.gatt) {
+            try {
+                await device.gatt.connect();
+                document.getElementById("connectionStatus").innerText = "Connected";
+                addLog(`Connected to Bluetooth device ${device.name || device.id}`);
+            } catch (connectError) {
+                console.warn("Bluetooth connect failed:", connectError);
+                addLog(`Bluetooth pairing available for ${device.name || device.id}`);
+            }
+        }
+    } catch (error) {
+        console.warn("Bluetooth scan aborted or failed:", error);
+        addLog("Bluetooth scan cancelled or failed.");
+    }
+}
+
+function connectControls() {
+    document.querySelectorAll(".dir-btn").forEach((button) => {
+        button.addEventListener("click", () => {
+            sendDroneCommand("move", { direction: button.dataset.direction });
+        });
+        button.setAttribute('type', 'button');
+    });
+
+    document.getElementById("takeoffBtn").addEventListener("click", () => sendDroneCommand("takeoff"));
+    document.getElementById("landBtn").addEventListener("click", () => sendDroneCommand("land"));
+    document.getElementById("emergencyBtn").addEventListener("click", () => sendDroneCommand("emergency"));
+    document.getElementById("monitorBtn").addEventListener("click", () => sendDroneCommand("monitor"));
+    document.getElementById("sprayBtn").addEventListener("click", () => sendDroneCommand("spray"));
+
+    document.getElementById("saveDeviceInfoBtn").addEventListener("click", saveDeviceInfo);
+    document.getElementById("scanBluetoothBtn").addEventListener("click", scanBluetoothDevice);
+
+    document.getElementById("altitudeSlider").addEventListener("input", (event) => {
+        document.getElementById("altitudeValue").innerText = event.target.value;
+    });
+    document.getElementById("altitudeSlider").addEventListener("change", (event) => {
+        sendDroneCommand("setAltitude", { altitude: Number(event.target.value) });
+    });
+
+    document.getElementById("speedSlider").addEventListener("input", (event) => {
+        document.getElementById("speedValue").innerText = event.target.value;
+    });
+    document.getElementById("speedSlider").addEventListener("change", (event) => {
+        sendDroneCommand("setSpeed", { speed: Number(event.target.value) });
+    });
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    routeSummary = document.getElementById("routeSummary");
+    initializeMap();
+    connectControls();
+    fetchSavedDeviceInfo();
+    refreshTelemetry();
+    setInterval(refreshTelemetry, 1400);
+});
+</script>
+{% endblock %}

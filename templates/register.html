@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Register - AgroSmart{% endblock %}
+
+{% block content %}
+<section class="form-panel">
+    <div class="panel">
+        <h2>Create your AgroSmart account</h2>
+        {% if error %}
+            <p class="form-error">{{ error }}</p>
+        {% endif %}
+        <form method="POST" action="/register" enctype="multipart/form-data">
+            <label>Register as</label>
+            <div class="role-selection">
+                <label><input type="radio" name="role" value="farmer" checked> Farmer</label>
+                <label><input type="radio" name="role" value="admin"> Admin</label>
+            </div>
+
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" placeholder="Enter your name" required>
+
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+
+            <label for="phone">Phone number</label>
+            <input type="tel" id="phone" name="phone" placeholder="Enter your mobile number" required>
+
+            <label for="photo">Profile photo</label>
+            <input type="file" id="photo" name="photo" accept="image/*" capture="environment">
+
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="Enter a password" required>
+
+            <label for="location">Location</label>
+            <input type="text" id="location" name="location" placeholder="Enter your location" required>
+
+            <div id="admin-fields" class="admin-fields hidden">
+                <label for="aadhaar">Aadhaar card number</label>
+                <input type="text" id="aadhaar" name="aadhaar" placeholder="Enter Aadhaar number">
+
+                <label for="driving_license">Driving license number</label>
+                <input type="text" id="driving_license" name="driving_license" placeholder="Enter driving license number">
+
+                <label for="ration_card">Ration card number</label>
+                <input type="text" id="ration_card" name="ration_card" placeholder="Enter ration card number">
+
+                <label for="vehicle_number">Registered vehicle number</label>
+                <input type="text" id="vehicle_number" name="vehicle_number" placeholder="Enter vehicle number">
+
+                <label for="vehicle_image">Vehicle image</label>
+                <input type="file" id="vehicle_image" name="vehicle_image" accept="image/*" capture="environment">
+            </div>
+
+            <button class="button" type="submit">Register</button>
+        </form>
+        <p>Already have an account? <a href="/login">Login here</a></p>
+    </div>
+</section>
+
+<script>
+document.querySelectorAll('input[name="role"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        const adminFields = document.getElementById('admin-fields');
+        adminFields.classList.toggle('hidden', radio.value !== 'admin');
+    });
+});
+</script>
+
+<style>
+.role-selection {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.role-selection label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.admin-fields.hidden {
+    display: none;
+}
+</style>
+{% endblock %}

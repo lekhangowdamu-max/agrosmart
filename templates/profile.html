@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - AgroSmart{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>Your Profile</h2>
+    <p>Manage your farmer profile and original location data.</p>
+</section>
+
+<section class="panel profile-top">
+    <div class="profile-avatar">
+        {% if profile.photo %}
+            <img src="/static/{{ profile.photo }}" alt="Farmer photo" class="profile-photo-large">
+        {% else %}
+            <img src="https://via.placeholder.com/220?text=Farmer" alt="Farmer photo" class="profile-photo-large">
+        {% endif %}
+    </div>
+    <div class="profile-details">
+        <h2>Your Profile</h2>
+        <p>Manage your farmer profile and original location data.</p>
+    </div>
+</section>
+
+<div class="panel profile-card">
+    <h3>{{ profile.name }}</h3>
+    <p><strong>Role:</strong> {{ profile.role|title if profile.role else 'Farmer' }}</p>
+    <p><strong>Email:</strong> {{ profile.email }}</p>
+    <p><strong>Phone:</strong> {{ profile.phone or 'Not set' }}</p>
+    <p><strong>Phone verified:</strong> {{ 'Yes' if profile.phone_verified else 'No' }}</p>
+    <p><strong>Location:</strong> {{ profile.location or 'Not set' }}</p>
+    {% if profile.role == 'admin' %}
+        <p><strong>Aadhaar:</strong> {{ profile.aadhaar or 'Not set' }}</p>
+        <p><strong>Driving License:</strong> {{ profile.driving_license or 'Not set' }}</p>
+        <p><strong>Ration Card:</strong> {{ profile.ration_card or 'Not set' }}</p>
+        <p><strong>Vehicle Number:</strong> {{ profile.vehicle_number or 'Not set' }}</p>
+        {% if profile.vehicle_image %}
+            <p><strong>Vehicle Photo:</strong></p>
+            <img src="/static/{{ profile.vehicle_image }}" alt="Vehicle image" style="max-width: 260px; border-radius: 12px; margin-top: 0.75rem;">
+        {% endif %}
+    {% endif %}
+    <p><strong>User ID:</strong> {{ profile.id }}</p>
+</div>
+{% endblock %}

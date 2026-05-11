@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agricultural Machinery Gallery</title>
+    <style>
+        :root {
+            --bg: #f3faf4;
+            --surface: #ffffff;
+            --primary: #2f8f4f;
+            --primary-dark: #1f5d33;
+            --text: #1d2a1f;
+            --muted: #556b56;
+            --border: #dce7dc;
+            --shadow: 0 18px 36px rgba(31, 41, 55, 0.09);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .page-shell {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.25rem 4rem;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 2rem 1rem;
+            background: linear-gradient(180deg, rgba(47, 143, 79, 0.16) 0%, rgba(255,255,255,0) 100%);
+            border-radius: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(47, 143, 79, 0.12);
+        }
+
+        .hero h1 {
+            margin: 0 0 0.75rem;
+            font-size: clamp(2.2rem, 4vw, 3.4rem);
+            color: var(--primary-dark);
+        }
+
+        .hero p {
+            margin: 0 auto;
+            max-width: 760px;
+            color: var(--muted);
+            font-size: 1.05rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .section-card {
+            background: var(--surface);
+            padding: 1.25rem;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .section-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 26px 56px rgba(31, 41, 55, 0.15);
+        }
+
+        .section-card h2 {
+            margin: 0 0 0.35rem;
+            font-size: 1.35rem;
+            color: var(--primary-dark);
+        }
+
+        .section-card p {
+            margin: 0 0 1rem;
+            color: var(--muted);
+        }
+
+        .photo-grid {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .photo-card {
+            overflow: hidden;
+            border-radius: 22px;
+            border: 1px solid rgba(47, 143, 79, 0.12);
+            background: #fff;
+            box-shadow: 0 16px 36px rgba(31, 41, 55, 0.08);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .photo-card:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 26px 50px rgba(31, 41, 55, 0.15);
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+        }
+
+        .photo-card-content {
+            padding: 1rem 1rem 1.2rem;
+        }
+
+        .photo-card-content h3 {
+            margin: 0 0 0.5rem;
+            font-size: 1.15rem;
+            color: var(--text);
+        }
+
+        .photo-card-content p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.97rem;
+        }
+
+        .section-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .section-heading h2 {
+            margin: 0;
+            font-size: 1.6rem;
+        }
+
+        .section-description {
+            max-width: 720px;
+            color: var(--muted);
+        }
+
+        .filter-panel {
+            background: #e8f5ea;
+            padding: 1rem 1.25rem;
+            border-radius: 18px;
+            border: 1px solid rgba(47, 143, 79, 0.14);
+            margin-top: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .filter-panel span {
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+
+        .cards-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 720px) {
+            .hero {
+                padding: 1.5rem 1rem;
+            }
+
+            .photo-card img {
+                height: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-shell">
+        <section class="hero">
+            <h1>Agricultural Machinery Gallery</h1>
+            <p>Explore farming equipment categories that are dynamically assigned from keyword-driven image data. Each section contains machinery cards with realistic agricultural visuals and detailed descriptions.</p>
+        </section>
+
+        <section class="filter-panel">
+            <span>Dynamic Image Assignment</span>
+            <p class="section-description">Images are filtered automatically into Tractor, Harvester, Plough, Cultivator, and Seeder sections based on keyword matching in the machine name.</p>
+        </section>
+
+        <div class="grid" id="gallerySections">
+            <article class="section-card" id="tractorSection">
+                <div class="section-heading">
+                    <h2>Tractor</h2>
+                </div>
+                <p class="section-description">Tractor images show heavy-duty farm tractors in fields and ready for work.</p>
+                <div class="photo-grid" data-section="tractor"></div>
+            </article>
+
+            <article class="section-card" id="harvesterSection">
+                <div class="section-heading">
+                    <h2>Harvester</h2>
+                </div>
+                <p class="section-description">Harvester images display powerful machines cutting through crops efficiently.</p>
+                <div class="photo-grid" data-section="harvester"></div>
+            </article>
+
+            <article class="section-card" id="ploughSection">
+                <div class="section-heading">
+                    <h2>Plough</h2>
+                </div>
+                <p class="section-description">Plough images highlight soil turning and tillage equipment for field preparation.</p>
+                <div class="photo-grid" data-section="plough"></div>
+            </article>
+
+            <article class="section-card" id="cultivatorSection">
+                <div class="section-heading">
+                    <h2>Cultivator</h2>
+                </div>
+                <p class="section-description">Cultivator images feature machines preparing seedbeds and controlling weeds.</p>
+                <div class="photo-grid" data-section="cultivator"></div>
+            </article>
+
+            <article class="section-card" id="seederSection">
+                <div class="section-heading">
+                    <h2>Seeder</h2>
+                </div>
+                <p class="section-description">Seeder images show precise sowing equipment for modern planting operations.</p>
+                <div class="photo-grid" data-section="seeder"></div>
+            </article>
+        </div>
+    </div>
+
+    <script>
+        const machineImages = [
+            {
+                name: 'Tractor in field',
+                alt: 'Tractor in field',
+                description: 'A strong red tractor working on a green farm field.',
+                url: 'https://images.unsplash.com/photo-1516455590571-18256e5bb9ff?auto=format&fit=crop&w=1200&q=80'
+            },
+            {
+                name: 'Harvester machine',
+                alt: 'Harvester machine',
+                description: 'A modern harvester cutting ripe crops during sunset.',
+                url: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80'
+            },
+            {
+                name: 'Plough tillage tool',
+                alt: 'Plough machine in field',
+                description: 'A plough working the soil to prepare it for planting.',
+                url: 'https://images.unsplash.com/photo-1531235641211-5f7e8806c183?auto=format&fit=crop&w=1200&q=80'
+            },
+            {
+                name: 'Cultivator farming equipment',
+                alt: 'Cultivator machine',
+                description: 'A cultivator maintaining even soil texture in the farm field.',
+                url: 'https://images.unsplash.com/photo-1498962908611-28b7f7af7f05?auto=format&fit=crop&w=1200&q=80'
+            },
+            {
+                name: 'Seeder for planting',
+                alt: 'Seeder machine planting seeds',
+                description: 'A seeder spreading seeds accurately across the soil.',
+                url: 'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=1200&q=80'
+            },
+            {
+                name: 'Field tractor work',
+                alt: 'Tractor work in field',
+                description: 'A tractor moving through a crop field under blue sky.',
+                url: 'https://images.unsplash.com/photo-1597176235952-3c4c7931202b?auto=format&fit=crop&w=1200&q=80'
+            },
+            {
+                name: 'Modern harvester',
+                alt: 'Modern harvester',
+                description: 'A large harvester harvesting grains on a sunny farm.',
+                url: 'https://images.unsplash.com/photo-1447175008436-054170c2e979?auto=format&fit=crop&w=1200&q=80'
+            },
+            {
+                name: 'Tillage plough tool',
+                alt: 'Tillage plough tool',
+                description: 'A tillage tool turning soil ahead of planting season.',
+                url: 'https://images.unsplash.com/photo-1518684079-6346d0c5b0da?auto=format&fit=crop&w=1200&q=80'
+            },
+            {
+                name: 'Cultivator preparing soil',
+                alt: 'Cultivator preparing soil',
+                description: 'A cultivator preparing the earth for the next crop.',
+                url: 'https://images.unsplash.com/photo-1504208434309-cb69f4fe52b0?auto=format&fit=crop&w=1200&q=80'
+            }
+        ];
+
+        const sections = {
+            tractor: document.querySelector('[data-section="tractor"]'),
+            harvester: document.querySelector('[data-section="harvester"]'),
+            plough: document.querySelector('[data-section="plough"]'),
+            cultivator: document.querySelector('[data-section="cultivator"]'),
+            seeder: document.querySelector('[data-section="seeder"]')
+        };
+
+        const keywordMap = [
+            { keyword: 'tractor', section: 'tractor' },
+            { keyword: 'harvester', section: 'harvester' },
+            { keyword: 'plough', section: 'plough' },
+            { keyword: 'tillage', section: 'plough' },
+            { keyword: 'cultivator', section: 'cultivator' },
+            { keyword: 'seeder', section: 'seeder' }
+        ];
+
+        function assignImageSection(item) {
+            const lowerName = item.name.toLowerCase();
+            const match = keywordMap.find(entry => lowerName.includes(entry.keyword));
+            return match ? match.section : null;
+        }
+
+        function createCard(item) {
+            const card = document.createElement('div');
+            card.className = 'photo-card';
+            card.innerHTML = `
+                <img src="${item.url}" alt="${item.alt}">
+                <div class="photo-card-content">
+                    <h3>${item.name}</h3>
+                    <p>${item.description}</p>
+                </div>
+            `;
+            return card;
+        }
+
+        function populateGallery() {
+            Object.values(sections).forEach(section => section.innerHTML = '');
+
+            machineImages.forEach(item => {
+                const targetSection = assignImageSection(item);
+                if (targetSection && sections[targetSection]) {
+                    sections[targetSection].appendChild(createCard(item));
+                }
+            });
+
+            Object.entries(sections).forEach(([key, section]) => {
+                if (!section.children.length) {
+                    section.innerHTML = '<p style="color: var(--muted);">No images available for this category yet.</p>';
+                }
+            });
+        }
+
+        populateGallery();
+    </script>
+</body>
+</html>

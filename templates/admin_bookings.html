@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Bookings - Admin{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>Manage Bookings</h2>
+    <p>Review and approve/reject booking requests.</p>
+</section>
+
+<div class="card">
+    {% if bookings %}
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Machine</th>
+                        <th>Customer</th>
+                        <th>Duration</th>
+                        <th>Total Cost</th>
+                        <th>Status</th>
+                        <th>Requested On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in bookings %}
+                        <tr>
+                            <td>
+                                <strong>{{ booking.machine_name }}</strong><br>
+                                <small>{{ booking.machine_location }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ booking.user_name }}</strong><br>
+                                <small>{{ booking.user_email }}<br>{{ booking.user_location }}</small>
+                            </td>
+                            <td>{{ booking.start_date }} to {{ booking.end_date }}</td>
+                            <td>₹{{ booking.total_cost }}</td>
+                            <td>
+                                <span class="status status-{{ booking.status }}">
+                                    {{ booking.status|title }}
+                                </span>
+                            </td>
+                            <td>{{ booking.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                {% if booking.status == 'pending' %}
+                                    <form method="POST" action="/admin/approve_booking/{{ booking.id }}" style="display: inline;">
+                                        <button type="submit" class="btn-approve">Approve</button>
+                                    </form>
+                                    <form method="POST" action="/admin/reject_booking/{{ booking.id }}" style="display: inline;">
+                                        <button type="submit" class="btn-reject" onclick="return confirm('Are you sure you want to reject this booking?')">Reject</button>
+                                    </form>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% if booking.status == 'approved' %}
+                            <tr class="notes-row">
+                                <td colspan="7">
+                                    <strong>Accepted by Admin:</strong>
+                                    {% if booking.admin_phone %}
+                                        {{ booking.admin_phone }}
+                                    {% else %}
+                                        Not available
+                                    {% endif %}
+                                    {% if booking.admin_vehicle_number %}
+                                        · <strong>Vehicle:</strong> {{ booking.admin_vehicle_number }}
+                                    {% endif %}
+                                    {% if booking.admin_photo %}
+                                        <img src="/static/{{ booking.admin_photo }}" alt="Admin photo" class="admin-photo-small">
+                                    {% endif %}
+                                    {% if booking.admin_location %}
+                                        <div><strong>Admin location:</strong> {{ booking.admin_location }}</div>
+                                    {% endif %}
+                                    {% if booking.user_location %}
+                                        <div><strong>Farmer location:</strong> {{ booking.user_location }}</div>
+                                    {% endif %}
+                                    {% if booking.admin_location and booking.user_location %}
+                                        <div style="margin-top:0.75rem;">
+                                            <a href="https://www.google.com/maps/dir/?api=1&origin={{ booking.admin_location|urlencode }}&destination={{ booking.user_location|urlencode }}&travelmode=driving" target="_blank" class="btn-route">Go to Farmer</a>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                        {% if booking.notes %}
+                            <tr class="notes-row">
+                                <td colspan="7">
+                                    <strong>Customer Notes:</strong> {{ booking.notes }}
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No bookings found.</p>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-top: 2rem;">
+    <h3>Booking Statistics</h3>
+    <div class="stats-grid">
+        <div class="stat">
+            <h4>Total Bookings</h4>
+            <p>{{ bookings|length }}</p>
+        </div>
+        <div class="stat">
+            <h4>Pending Approval</h4>
+            <p>{{ bookings|selectattr('status', 'equalto', 'pending')|list|length }}</p>
+        </div>
+        <div class="stat">
+            <h4>Approved</h4>
+            <p>{{ bookings|selectattr('status', 'equalto', 'approved')|list|length }}</p>
+        </div>
+        <div class="stat">
+            <h4>Completed</h4>
+            <p>{{ bookings|selectattr('status', 'equalto', 'completed')|list|length }}</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.status-pending { background: #fff3cd; color: #856404; }
+.status-approved { background: #d4edda; color: #155724; }
+.status-rejected { background: #f8d7da; color: #721c24; }
+.status-cancelled { background: #e2e3e5; color: #383d41; }
+.status-completed { background: #d1ecf1; color: #0c5460; }
+
+.btn-approve {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-right: 0.5rem;
+}
+
+.btn-approve:hover {
+    background: #218838;
+}
+
+.btn-reject {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.btn-reject:hover {
+    background: #c82333;
+}
+
+.btn-route {
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    padding: 0.4rem 0.75rem;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.btn-route:hover {
+    background: #0069d9;
+}
+
+.notes-row {
+    background: #f8f9fa;
+}
+
+.notes-row td {
+    padding: 0.5rem !important;
+    font-size: 0.9rem;
+}
+
+.admin-photo-small {
+    width: 38px;
+    height: 38px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-left: 0.75rem;
+    vertical-align: middle;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.stat {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.stat h4 {
+    margin: 0 0 0.5rem 0;
+    color: #666;
+}
+
+.stat p {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0;
+    color: #333;
+}
+</style>
+{% endblock %}
+
+.notes-row td {
+    padding: 0.5rem !important;
+    font-size: 0.9rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.stat {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.stat h4 {
+    margin: 0 0 0.5rem 0;
+    color: #666;
+}
+
+.stat p {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0;
+    color: #333;
+}
+</style>

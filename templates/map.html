@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}Market Map - AgroSmart{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>Market & Farm Map</h2>
+    <p>Explore all market locations across the region and get directions from your registered farm location.</p>
+    <p><strong>Registered location:</strong> {{ user_location }}</p>
+</section>
+
+<section class="map-section">
+    <div class="map-search-card panel">
+        <label for="map-search">Search location</label>
+        <div class="search-input-row">
+            <input id="map-search" type="search" placeholder="Type city, market, farm zone..." autocomplete="off" />
+            <button id="clear-search" class="button button-secondary" type="button">Clear</button>
+        </div>
+        <ul id="search-suggestions" class="search-suggestions" role="listbox"></ul>
+        <button id="route-button" class="button" type="button" disabled>Show directions</button>
+        <div id="geolocation-status" class="geolocation-status">Waiting for live current location…</div>
+        <div id="route-summary" class="route-summary"></div>
+    </div>
+
+    <div id="map" class="map-panel"></div>
+</section>
+
+<section class="panel" style="margin-top: 1.5rem;">
+    <h3>Featured market locations</h3>
+    <p>All major marketplaces are visible on the map so you don't miss any market point.</p>
+    <ul class="location-list">
+        <li><strong>Bangalore</strong> — Central crop circulation hub</li>
+        <li><strong>Hyderabad</strong> — Major grain and seed market</li>
+        <li><strong>Mumbai</strong> — Export and wholesale center</li>
+        <li><strong>Chennai</strong> — Coastal logistics market</li>
+        <li><strong>Delhi</strong> — Wholesale agriculture distribution</li>
+        <li><strong>Kolkata</strong> — Eastern market and seed trade</li>
+        <li><strong>Pune</strong> — Agri technology and market access</li>
+        <li><strong>Ahmedabad</strong> — Commodity exchange and bulk market</li>
+    </ul>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const userCoords = {{ user_coords|tojson }};
+    const userLabel = {{ user_location|tojson }};
+    const defaultCenter = [20.5937, 78.9629];
+    const mapCenter = userCoords || defaultCenter;
+    const mapZoom = userCoords ? 8 : 5;
+
+    const map = L.map('map').setView(mapCenter, mapZoom);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    const marketLocations = [
+        { name: 'Bangalore Market', coords: [12.9716, 77.5946] },
+        { name: 'Hyderabad Market', coords: [17.3850, 78.4867] },
+        { name: 'Mumbai Port Market', coords: [19.0760, 72.8777] },
+        { name: 'Chennai Coastal Market', coords: [13.0827, 80.2707] },
+        { name: 'Delhi Wholesale Market', coords: [28.7041, 77.1025] },
+        { name: 'Kolkata Central Market', coords: [22.5726, 88.3639] },
+        { name: 'Pune Agri Hub', coords: [18.5204, 73.8567] },
+        { name: 'Ahmedabad Trade Center', coords: [23.0225, 72.5714] },
+        { name: 'Lucknow Farm Market', coords: [26.8467, 80.9462] },
+        { name: 'Bhubaneswar Market', coords: [20.2961, 85.8245] }
+    ];
+
+    marketLocations.forEach(location => {
+        L.marker(location.coords)
+            .addTo(map)
+            .bindPopup(`<strong>${location.name}</strong>`);
+    });
+
+    let selectedMarker = null;
+    let routeLayer = null;
+    let selectedPlace = null;
+    let currentMarker = null;
+
+    if (userCoords) {
+        currentMarker = L.marker(userCoords, { icon: L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32]
+        })}).addTo(map).bindPopup(`<strong>${userLabel}</strong>`);
+    }
+
+    const searchInput = document.getElementById('map-search');
+    const suggestionsList = document.getElementById('search-suggestions');
+    const routeButton = document.getElementById('route-button');
+    const routeSummary = document.getElementById('route-summary');
+    const clearButton = document.getElementById('clear-search');
+    const geolocationStatus = document.getElementById('geolocation-status');
+
+    let currentCoords = userCoords ? [...userCoords] : null;
+    let currentLabel = userLabel || 'Your saved location';
+    let locationWatchId = null;
+    let activeRoute = null;
+
+    function setRouteButton(enabled) {
+        routeButton.disabled = !enabled;
+    }
+
+    function clearSelection() {
+        if (selectedMarker) {
+            map.removeLayer(selectedMarker);
+            selectedMarker = null;
+        }
+        if (routeLayer) {
+            map.removeLayer(routeLayer);
+            routeLayer = null;
+        }
+        selectedPlace = null;
+        activeRoute = null;
+        setRouteButton(false);
+        routeSummary.innerHTML = '';
+    }
+
+    function showGeoStatus(message, error = false) {
+        geolocationStatus.textContent = message;
+        geolocationStatus.style.color = error ? '#b00020' : '';
+    }
+
+    function updateCurrentMarker() {
+        if (!currentCoords) {
+            return;
+        }
+        if (currentMarker) {
+            currentMarker.setLatLng(currentCoords);
+            currentMarker.setPopupContent(`<strong>${currentLabel}</strong>`);
+        } else {
+            currentMarker = L.marker(currentCoords, {
+                icon: L.icon({
+                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32]
+                })
+            }).addTo(map).bindPopup(`<strong>${currentLabel}</strong>`);
+        }
+    }
+
+    function recenterMapForCurrentPosition() {
+        if (currentCoords && !selectedPlace) {
+            map.setView(currentCoords, 13);
+        }
+    }
+
+    function refreshRoute() {
+        if (!selectedPlace || !currentCoords) {
+            return;
+        }
+        computeRoute();
+    }
+
+    function startGeolocationWatch() {
+        if (!navigator.geolocation) {
+            showGeoStatus('Browser geolocation not supported. Using saved profile location.', true);
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(position => {
+            currentCoords = [position.coords.latitude, position.coords.longitude];
+            currentLabel = 'Your live current location';
+            updateCurrentMarker();
+            recenterMapForCurrentPosition();
+            setRouteButton(!!selectedPlace);
+            showGeoStatus('Live GPS location enabled. Tracking your movement.');
+        }, error => {
+            showGeoStatus('Live location denied or unavailable. Using saved profile location.', true);
+            if (!currentCoords) {
+                currentCoords = userCoords;
+                updateCurrentMarker();
+            }
+        }, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        });
+
+        locationWatchId = navigator.geolocation.watchPosition(position => {
+            currentCoords = [position.coords.latitude, position.coords.longitude];
+            currentLabel = 'Your live current location';
+            updateCurrentMarker();
+            if (activeRoute) {
+                refreshRoute();
+            }
+        }, error => {
+            showGeoStatus('Unable to track live location continuously.', true);
+        }, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        });
+    }
+
+    startGeolocationWatch();
+
+    function renderSuggestions(items) {
+        if (!items.length) {
+            suggestionsList.innerHTML = '<li class="search-suggestion-item empty">No matching locations found.</li>';
+            return;
+        }
+        suggestionsList.innerHTML = items.map(item => `
+            <li class="search-suggestion-item" data-lat="${item.lat}" data-lon="${item.lon}">
+                <strong>${item.display_name.split(',')[0]}</strong>
+                <span>${item.display_name}</span>
+            </li>
+        `).join('');
+        suggestionsList.querySelectorAll('.search-suggestion-item').forEach(item => {
+            item.addEventListener('click', () => {
+                selectLocation(item.dataset.lat, item.dataset.lon, item.querySelector('strong').textContent, item.querySelector('span').textContent);
+            });
+        });
+    }
+
+    function selectLocation(lat, lon, title, subtitle) {
+        clearSelection();
+        selectedPlace = {
+            lat: parseFloat(lat),
+            lon: parseFloat(lon),
+            title,
+            subtitle
+        };
+        selectedMarker = L.marker([selectedPlace.lat, selectedPlace.lon], {
+            icon: L.icon({
+                iconUrl: 'https://cdn-icons-png.flaticon.com/512/252/252025.png',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30]
+            })
+        }).addTo(map).bindPopup(`<strong>${selectedPlace.title}</strong><br>${selectedPlace.subtitle}`).openPopup();
+        map.setView([selectedPlace.lat, selectedPlace.lon], 12);
+        setRouteButton(!!userCoords && !!selectedPlace);
+        routeSummary.innerHTML = `<p><strong>Selected:</strong> ${selectedPlace.title}</p>`;
+    }
+
+    let debounceTimer;
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim();
+        if (debounceTimer) clearTimeout(debounceTimer);
+        if (!query) {
+            suggestionsList.innerHTML = '';
+            clearSelection();
+            return;
+        }
+        debounceTimer = setTimeout(() => {
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=6&q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(results => {
+                    renderSuggestions(results.map(item => ({
+                        lat: item.lat,
+                        lon: item.lon,
+                        display_name: item.display_name
+                    })));
+                })
+                .catch(() => {
+                    suggestionsList.innerHTML = '<li class="search-suggestion-item empty">Unable to load suggestions.</li>';
+                });
+        }, 300);
+    });
+
+    clearButton.addEventListener('click', () => {
+        searchInput.value = '';
+        suggestionsList.innerHTML = '';
+        clearSelection();
+    });
+
+    function computeRoute() {
+        if (!selectedPlace || !currentCoords) {
+            routeSummary.innerHTML = '<p class="form-error">Choose a destination and allow live location access.</p>';
+            return;
+        }
+        const startCoords = currentCoords || userCoords;
+        if (!startCoords) {
+            routeSummary.innerHTML = '<p class="form-error">No start location available for routing.</p>';
+            return;
+        }
+        activeRoute = true;
+        if (routeLayer) {
+            map.removeLayer(routeLayer);
+            routeLayer = null;
+        }
+        const routingUrl = `https://router.project-osrm.org/route/v1/driving/${startCoords[1]},${startCoords[0]};${selectedPlace.lon},${selectedPlace.lat}?overview=full&geometries=geojson&steps=true`;
+        fetch(routingUrl)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.routes || !data.routes.length) {
+                    throw new Error('No route available');
+                }
+                const route = data.routes[0];
+                routeLayer = L.geoJSON(route.geometry, {
+                    style: { color: '#2f8f4f', weight: 5, opacity: 0.8 }
+                }).addTo(map);
+                map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+
+                const steps = (route.legs && route.legs[0] && route.legs[0].steps) || [];
+                const stepsHtml = steps.length ? steps.map(step => `
+                    <li class="route-step">
+                        <span class="step-instruction">${step.maneuver.instruction}</span>
+                        <span class="step-meta">${(step.distance / 1000).toFixed(2)} km · ${Math.ceil(step.duration / 60)} min</span>
+                    </li>
+                `).join('') : '<li class="route-step empty">No detailed directions available.</li>';
+
+                routeSummary.innerHTML = `
+                    <div class="route-summary-header"><strong>Route information</strong></div>
+                    <p><strong>From:</strong> ${currentLabel}</p>
+                    <p><strong>To:</strong> ${selectedPlace.title}</p>
+                    <p><strong>Distance:</strong> ${(route.distance / 1000).toFixed(1)} km</p>
+                    <p><strong>Estimated time:</strong> ${Math.ceil(route.duration / 60)} min</p>
+                    <ol class="route-steps">${stepsHtml}</ol>
+                `;
+            })
+            .catch(err => {
+                routeSummary.innerHTML = `<p class="form-error">Unable to load directions: ${err.message}</p>`;
+            });
+    }
+
+    routeButton.addEventListener('click', computeRoute);
+</script>
+{% endblock %}

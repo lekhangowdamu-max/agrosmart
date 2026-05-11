@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Crop Prices - AgroSmart{% endblock %}
+
+{% block content %}
+
+<section class="panel">
+    <h2>Crop Market Prices</h2>
+    <p>Real-time agricultural commodity prices from Karnataka markets.</p>
+</section>
+
+<div class="card">
+    <h3>Filter by Location and Crop</h3>
+    <form method="GET" id="filter-form">
+        <div class="filter-row">
+            <div class="filter-group">
+                <label for="state">State:</label>
+                <select name="state" id="state" onchange="updateDistricts()">
+                    <option value="">Select State</option>
+                    {% for state in states %}
+                        <option value="{{ state }}" {% if state == selected_state %}selected{% endif %}>{{ state }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="district">District:</label>
+                <select name="district" id="district" onchange="updateCrops()">
+                    <option value="">Select District</option>
+                    {% for district in districts %}
+                        <option value="{{ district }}" {% if district == selected_district %}selected{% endif %}>{{ district }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="crop">Crop:</label>
+                <select name="crop" id="crop" onchange="submitForm()">
+                    <option value="">Select Crop</option>
+                    {% for crop in crops %}
+                        <option value="{{ crop }}" {% if crop == selected_crop %}selected{% endif %}>{{ crop }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    {% if prices %}
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Crop (English)</th>
+                        <th>Crop (Kannada)</th>
+                        <th>Market</th>
+                        <th>Min Price</th>
+                        <th>Max Price</th>
+                        <th>Modal Price</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for price in prices %}
+                        <tr>
+                            <td>{{ price.commodity or 'N/A' }}</td>
+                            <td>{{ price.kannada_name or 'N/A' }}</td>
+                            <td>{{ price.market or 'N/A' }}</td>
+                            <td>?{{ price.min_price or 'N/A' }}</td>
+                            <td>?{{ price.max_price or 'N/A' }}</td>
+                            <td>?{{ price.modal_price or 'N/A' }}</td>
+                            <td>{{ price.arrival_date or 'N/A' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>Select state, district, and crop to view prices.</p>
+    {% endif %}
+</div>
+
+{% if price_history %}
+<div class="card">
+    <h3>{{ selected_crop }} Price Trend (Last 30 Days)</h3>
+    <div class="chart-container">
+        <canvas id="priceChart"></canvas>
+    </div>
+</div>
+{% endif %}
+
+{% if gov_details %}
+<div class="card">
+    <h3>Government Crop Information</h3>
+    <ul>
+        {% for crop in gov_details %}
+            <li>{{ crop.crop }} - {{ crop.source }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% if error %}
+    <div class="form-error">{{ error }}</div>
+{% endif %}
+
+<style>
+.filter-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.filter-group {
+    flex: 1;
+}
+
+.filter-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.filter-group select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    margin: 20px 0;
+}
+
+.chart-container canvas {
+    max-width: 100%;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+{% if price_history %}
+<script>
+function updateDistricts() {
+    document.getElementById('district').value = '';
+    document.getElementById('crop').value = '';
+    submitForm();
+}
+
+function updateCrops() {
+    document.getElementById('crop').value = '';
+    submitForm();
+}
+
+function submitForm() {
+    document.getElementById('filter-form').submit();
+}
+
+// Initialize and render price chart
+window.addEventListener('DOMContentLoaded', function() {
+    const priceHistory = {{ price_history | tojson | safe }};
+    const dates = priceHistory.map(item => item.date);
+    const prices = priceHistory.map(item => item.price);
+
+    const ctx = document.getElementById('priceChart');
+    if (ctx) {
+        new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: '{{ selected_crop }} Price (₹)',
+                    data: prices,
+                    borderColor: '#2ecc71',
+                    backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#2ecc71',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 6,
+                    hoverBackgroundColor: '#27ae60'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            font: {
+                                size: 12
+                            },
+                            padding: 15
+                        }
+                    },
+                    title: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Price (₹)'
+                        },
+                        grid: {
+                            color: 'rgba(200, 200, 200, 0.1)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        },
+                        grid: {
+                            color: 'rgba(200, 200, 200, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

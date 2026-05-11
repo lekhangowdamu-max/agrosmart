@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Weather - AgroSmart{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>Weather Overview</h2>
+    <p>Monitor current conditions for your registered farm location.</p>
+</section>
+
+{% if weather.error %}
+    <div class="panel">
+        <p class="form-error">{{ weather.error }}</p>
+        <p>Please set the <strong>OPENWEATHER_API_KEY</strong> environment variable to enable live weather.
+        You can get one from <a href="https://openweathermap.org/" target="_blank">OpenWeatherMap</a>.</p>
+    </div>
+{% else %}
+    <div class="card-grid">
+        <div class="card">
+            <h3>Location</h3>
+            <p>{{ weather.location }}</p>
+        </div>
+        <div class="card">
+            <h3>Temperature</h3>
+            <p>{{ weather.temperature }}°C</p>
+            <p>Feels like {{ weather.feels_like }}°C</p>
+        </div>
+        <div class="card">
+            <h3>Conditions</h3>
+            <p>{{ weather.description }}</p>
+            <p>Humidity {{ weather.humidity }}%</p>
+            <p>Wind {{ weather.wind }} m/s</p>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Track Booking - AgroSmart{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>Track Your Accepted Booking</h2>
+    <p>View directions between your farm and the assigned admin vehicle.</p>
+</section>
+
+<div class="card">
+    <div class="track-summary">
+        <p><strong>Machine:</strong> {{ booking.machine_name }}</p>
+        <p><strong>Booking window:</strong> {{ booking.start_date }} to {{ booking.end_date }}</p>
+        <p><strong>Status:</strong> <span class="status status-approved">{{ booking.status|title }}</span></p>
+        <p><strong>Admin contact:</strong> {{ booking.admin_phone or 'Not available' }}</p>
+        <p><strong>Vehicle:</strong> {{ booking.admin_vehicle_number or 'Not available' }}</p>
+        <p><strong>Your farm location:</strong> {{ origin }}</p>
+        <p><strong>Assigned admin location:</strong> {{ destination or 'Not available' }}</p>
+    </div>
+
+    {% if origin and destination %}
+    <div class="map-card">
+        <iframe
+            width="100%"
+            height="500"
+            frameborder="0"
+            style="border:0; border-radius: 16px;"
+            src="https://www.google.com/maps/embed/v1/directions?key={{ google_maps_api_key|e }}&origin={{ origin_url }}&destination={{ destination_url }}&mode=driving"
+            allowfullscreen>
+        </iframe>
+        <div style="margin-top: 1rem;">
+            <a href="https://www.google.com/maps/dir/?api=1&origin={{ origin_url }}&destination={{ destination_url }}&travelmode=driving" target="_blank" class="button button-secondary">Open route in Google Maps</a>
+        </div>
+    </div>
+    {% else %}
+        <p class="form-error">Unable to show directions because location details are missing.</p>
+    {% endif %}
+</div>
+
+<style>
+.track-summary p {
+    margin: 0.75rem 0;
+}
+
+.map-card {
+    margin-top: 1.5rem;
+}
+
+.status-approved {
+    background: #d4edda;
+    color: #155724;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+}
+</style>
+{% endblock %}

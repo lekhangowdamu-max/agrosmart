@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Motor Control - AgroSmart{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>Motor Control</h2>
+    <p>Simulate starting and stopping your farm motors.</p>
+</section>
+
+<div class="panel">
+    <button class="button" onclick="turnOn()">Turn ON</button>
+    <button class="button button-secondary" onclick="turnOff()">Turn OFF</button>
+    <p id="status" style="margin-top:1.25rem; font-weight:600;">Status: OFF</p>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function turnOn() {
+    document.getElementById("status").innerText = "Status: ON";
+}
+
+function turnOff() {
+    document.getElementById("status").innerText = "Status: OFF";
+}
+</script>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}CCTV Monitoring - AgroSmart{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>CCTV Monitoring</h2>
+    <p>Monitor your farm activity in real time with camera feeds.</p>
+</section>
+
+<div class="panel">
+    <img src="https://via.placeholder.com/900x450" alt="Camera Feed" style="width:100%; border-radius:18px; display:block;">
+    <button class="button" style="margin-top:1rem;" onclick="capture()">Capture Image</button>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function capture() {
+    alert("Image captured from CCTV feed.");
+}
+</script>
+{% endblock %}
