@@ -6,6 +6,5 @@
   "env": {
     "VITE_APP_BACKEND_URL": "@agrosmart_backend_url",
     "VITE_DRONE_SERVER_URL": "@agrosmart_drone_server_url"
-  },
-  "envPrefix": "VITE_"
+  }
 }
