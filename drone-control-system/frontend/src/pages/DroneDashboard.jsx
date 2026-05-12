@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import VideoPanel from "../components/VideoPanel";
 import JoystickControl from "../components/JoystickControl";
 import TelemetryPanel from "../components/TelemetryPanel";
