@@ -1,24 +1,13 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "wsgi.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "50mb",
-        "runtime": "python3.11"
-      }
+  "experimentalServices": {
+    "frontend": {
+      "entrypoint": "drone-control-system/frontend",
+      "routePrefix": "/",
+      "framework": "vite"
+    },
+    "backend": {
+      "entrypoint": "drone-control-system/backend",
+      "routePrefix": "/_/backend"
     }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "wsgi.py"
-    }
-  ],
-  "env": {
-    "FLASK_ENV": "production",
-    "FLASK_APP": "app.py"
-  },
-  "buildCommand": "pip install -r requirements.txt"
+  }
 }
