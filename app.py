@@ -1,65 +1,61 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-import sqlite3
+﻿from datetime import datetime
 import os
-from werkzeug.security import generate_password_hash, check_password_hash
+
+from flask import Flask, flash, redirect, render_template, request, url_for
+from flask_login import LoginManager, current_user, login_required, login_user, logout_user
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from models import (
+    Booking,
+    CropPrice,
+    DroneLog,
+    DroneTelemetry,
+    Machinery,
+    Upload,
+    User,
+    db,
+)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
+
+database_url = os.environ.get("DATABASE_URL") or os.environ.get("SQLALCHEMY_DATABASE_URI")
+if database_url and database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+if not database_url:
+    database_url = os.environ.get("SQLALCHEMY_DATABASE_URI", "sqlite:///agrosmart.db")
+    app.logger.warning("DATABASE_URL not set; falling back to local SQLite for development.")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,
+    "pool_size": int(os.environ.get("DB_POOL_SIZE", 10)),
+    "max_overflow": int(os.environ.get("DB_MAX_OVERFLOW", 20)),
+    "pool_timeout": int(os.environ.get("DB_POOL_TIMEOUT", 30)),
+}
+app.config["UPLOADS_BASE_URL"] = os.environ.get("UPLOADS_BASE_URL", "/static/uploads/")
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = "login"
 
 LOGO_URL = "/static/logo.svg"
 
-# Database setup
-DATABASE = 'agrosmart.db'
+db.init_app(app)
+with app.app_context():
+    db.create_all()
 
-def get_db():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def init_db():
-    with get_db() as conn:
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
-                role TEXT NOT NULL DEFAULT 'farmer',
-                phone TEXT,
-                location TEXT,
-                phone_verified INTEGER DEFAULT 0,
-                photo TEXT,
-                aadhaar TEXT,
-                driving_license TEXT,
-                ration_card TEXT,
-                vehicle_number TEXT,
-                vehicle_image TEXT
-            )
-        ''')
-        conn.commit()
-
-# User class
-class User(UserMixin):
-    def __init__(self, id, name, email, role, phone=None, location=None):
-        self.id = id
-        self.name = name
-        self.email = email
-        self.role = role
-        self.phone = phone
-        self.location = location
 
 @login_manager.user_loader
 def load_user(user_id):
-    with get_db() as conn:
-        user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-        if user:
-            return User(user['id'], user['name'], user['email'], user['role'], user['phone'], user['location'])
-    return None
+    try:
+        return User.query.get(int(user_id))
+    except (TypeError, ValueError):
+        return None
+
 
 @app.context_processor
 def inject_user():
@@ -69,120 +65,143 @@ def inject_user():
         "role": current_user.role if current_user.is_authenticated else None,
     }
 
-init_db()
 
 @app.route("/")
 def home():
     return render_template("home.html")
 
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
-        with get_db() as conn:
-            user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
-            
-        if user and check_password_hash(user['password'], password):
-            user_obj = User(user['id'], user['name'], user['email'], user['role'], user['phone'], user['location'])
-            login_user(user_obj)
-            return redirect(url_for('dashboard'))
-        else:
-            flash('Invalid email or password', 'error')
-            return render_template("login.html", error="Invalid email or password")
-    
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+
+        if not email or not password:
+            flash("Email and password are required.", "error")
+            return render_template("login.html", error="Email and password are required.")
+
+        user = User.query.filter_by(email=email).first()
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            next_page = request.args.get("next")
+            return redirect(next_page or url_for("dashboard"))
+
+        flash("Invalid email or password", "error")
+        return render_template("login.html", error="Invalid email or password")
+
     return render_template("login.html", error=None)
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        name = request.form.get('name')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        role = request.form.get('role', 'farmer')
-        phone = request.form.get('phone')
-        location = request.form.get('location')
-        
-        # Basic validation
-        if not all([name, email, password]):
-            flash('All fields are required', 'error')
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+        role = request.form.get("role", "farmer")
+        phone = request.form.get("phone")
+        location = request.form.get("location")
+
+        if not name or not email or not password:
+            flash("Name, email, and password are required.", "error")
             return render_template("register.html", error="All fields are required")
-        
-        # Check if email already exists
-        with get_db() as conn:
-            existing = conn.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
-            if existing:
-                flash('Email already registered', 'error')
-                return render_template("register.html", error="Email already registered")
-            
-            # Hash password and insert
-            hashed_password = generate_password_hash(password)
-            conn.execute('''
-                INSERT INTO users (name, email, password, role, phone, location)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (name, email, hashed_password, role, phone, location))
-            conn.commit()
-        
-        flash('Registration successful! Please login.', 'success')
-        return redirect(url_for('login'))
-    
+
+        user = User(
+            name=name,
+            email=email,
+            password=generate_password_hash(password),
+            role=role if role in ["farmer", "admin"] else "farmer",
+            phone=phone,
+            location=location,
+        )
+
+        try:
+            db.session.add(user)
+            db.session.commit()
+            flash("Registration successful! Please login.", "success")
+            return redirect(url_for("login"))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Email already registered", "error")
+            return render_template("register.html", error="Email already registered")
+        except SQLAlchemyError:
+            db.session.rollback()
+            flash("Unable to register user at this time.", "error")
+            return render_template("register.html", error="Unable to register user at this time.")
+
     return render_template("register.html", error=None)
+
 
 @app.route("/logout")
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('home'))
+    return redirect(url_for("home"))
+
 
 @app.route("/dashboard")
 @login_required
 def dashboard():
     return render_template("dashboard.html", user_location=current_user.location or "Not set")
 
+
 @app.route("/machinery")
 def machinery():
-    return render_template("machinery.html", machines=[])
+    machines = Machinery.query.all()
+    return render_template("machinery.html", machines=machines)
+
 
 @app.route("/prices", methods=["GET", "POST"])
 def prices():
-    return render_template("prices.html", prices=[], states=[], districts=[], crops=[], selected_state="", selected_district="", selected_crop="", gov_details=[], price_history=None, error=None, success=None)
+    return render_template(
+        "prices.html",
+        prices=[],
+        states=[],
+        districts=[],
+        crops=[],
+        selected_state="",
+        selected_district="",
+        selected_crop="",
+        gov_details=[],
+        price_history=None,
+        error=None,
+        success=None,
+    )
+
 
 @app.route("/map")
 def map_view():
     return render_template("map.html", user_location="Not set", user_coords=None)
 
+
 @app.route("/weather")
 def weather():
     return render_template("weather.html", weather={"error": "Weather service temporarily disabled"})
+
 
 @app.route("/motor")
 def motor():
     return render_template("motor.html")
 
+
 @app.route("/drone")
 def drone():
     return render_template("drone.html")
+
 
 @app.route("/cctv")
 def cctv():
     return render_template("cctv.html")
 
+
 # Temporarily disabled for Vercel debugging:
-# - Database connections
 # - External API calls
 # - AI modules
 # - Drone modules
-# - Authentication logic
 # - Heavy imports
 # - Background services
-# - Schema initialization
 
-# Original AgroSmart code preserved below (commented out for minimal deployment)
-
-"""
-# Original app.py content disabled for minimal Vercel deployment
-"""
 
 if __name__ == "__main__":
     app.run(debug=True)
