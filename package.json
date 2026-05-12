@@ -1,0 +1,20 @@
+{
+  "name": "AgroSmart",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root package manifest for the AgroSmart project.",
+  "scripts": {
+    "frontend:install": "cd drone-control-system/frontend && npm install --no-audit --no-fund",
+    "backend:install": "cd drone-control-system/backend && npm install --no-audit --no-fund",
+    "postinstall": "npm run frontend:install && npm run backend:install",
+    "frontend:build": "cd drone-control-system/frontend && npm run build",
+    "backend:start": "cd drone-control-system/backend && npm run start",
+    "build": "npm run frontend:build",
+    "start": "npm run backend:start",
+    "dev": "cd drone-control-system/frontend && npm run dev"
+  },
+  "engines": {
+    "node": ">=18",
+    "npm": ">=9"
+  }
+}
