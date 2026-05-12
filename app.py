@@ -16,11 +16,11 @@ def inject_user():
 def home():
     return render_template("home.html")
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
     return render_template("login.html", error=None)
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
     return render_template("register.html", error=None)
 
@@ -32,7 +32,7 @@ def dashboard():
 def machinery():
     return render_template("machinery.html", machines=[])
 
-@app.route("/prices")
+@app.route("/prices", methods=["GET", "POST"])
 def prices():
     return render_template("prices.html", prices=[], states=[], districts=[], crops=[], selected_state="", selected_district="", selected_crop="", gov_details=[], price_history=None, error=None, success=None)
 
