@@ -1,52 +1,53 @@
-﻿from datetime import datetime
-import os
+﻿import os
 
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import Flask, flash, redirect, render_template, render_template_string, request, url_for
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from models import (
-    Booking,
-    CropPrice,
-    DroneLog,
-    DroneTelemetry,
-    Machinery,
-    Upload,
-    User,
-    db,
-)
-
-app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
-
-database_url = os.environ.get("DATABASE_URL") or os.environ.get("SQLALCHEMY_DATABASE_URI")
-if database_url and database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
-
-if not database_url:
-    database_url = os.environ.get("SQLALCHEMY_DATABASE_URI", "sqlite:///agrosmart.db")
-    app.logger.warning("DATABASE_URL not set; falling back to local SQLite for development.")
-
-app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_pre_ping": True,
-    "pool_size": int(os.environ.get("DB_POOL_SIZE", 10)),
-    "max_overflow": int(os.environ.get("DB_MAX_OVERFLOW", 20)),
-    "pool_timeout": int(os.environ.get("DB_POOL_TIMEOUT", 30)),
-}
-app.config["UPLOADS_BASE_URL"] = os.environ.get("UPLOADS_BASE_URL", "/static/uploads/")
+from database import configure_app, db
+from models import Booking, CropPrice, DroneLog, DroneTelemetry, Machinery, Upload, User
 
 login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = "login"
 
 LOGO_URL = "/static/logo.svg"
 
-db.init_app(app)
-with app.app_context():
-    db.create_all()
+
+def create_app():
+    app = Flask(__name__)
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
+    configure_app(app)
+
+    db.init_app(app)
+    login_manager.init_app(app)
+    login_manager.login_view = "login"
+
+    @app.errorhandler(SQLAlchemyError)
+    def handle_database_error(error):
+        app.logger.error("Database error: %s", error)
+        return render_template_string(
+            "<h1>Service unavailable</h1>"
+            "<p>We are unable to reach the database right now. Please try again later.</p>"
+        ), 503
+
+    @app.before_request
+    def ping_database():
+        database_url = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+        if database_url.startswith("postgresql://"):
+            try:
+                db.session.execute("SELECT 1")
+            except OperationalError as exc:
+                app.logger.warning("Database connection ping failed: %s", exc)
+                db.session.rollback()
+                return render_template_string(
+                    "<h1>Service unavailable</h1>"
+                    "<p>Database connection temporarily unavailable.</p>"
+                ), 503
+
+    return app
+
+
+app = create_app()
 
 
 @login_manager.user_loader
