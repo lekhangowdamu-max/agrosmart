@@ -1,0 +1,1 @@
+print("AgroSmart is running successfully")
