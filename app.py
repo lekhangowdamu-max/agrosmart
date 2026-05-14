@@ -12,13 +12,24 @@ login_manager = LoginManager()
 
 LOGO_URL = "/static/logo.svg"
 
+print("Flask app starting...")
+
 
 def create_app():
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
     configure_app(app)
+    print("Environment loaded...")
+    print("Connecting to database...")
 
-    db.init_app(app)
+    try:
+        db.init_app(app)
+        with app.app_context():
+            db.create_all()
+        print("Database connected successfully")
+    except Exception as e:
+        print("DATABASE ERROR:", str(e))
+
     login_manager.init_app(app)
     login_manager.login_view = "login"
 
@@ -70,6 +81,11 @@ def inject_user():
 @app.route("/")
 def home():
     return render_template("home.html")
+
+
+@app.route("/health")
+def health():
+    return {"status": "ok"}
 
 
 @app.route("/login", methods=["GET", "POST"])

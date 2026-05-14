@@ -26,6 +26,7 @@ def _ensure_sslmode(url: str) -> str:
 def get_database_uri() -> str:
     database_url = os.environ.get("DATABASE_URL") or os.environ.get("SQLALCHEMY_DATABASE_URI")
     if not database_url:
+        print("DATABASE WARNING: DATABASE_URL environment variable is not set. Falling back to local SQLite for development.")
         return "sqlite:///agrosmart.db"
 
     database_url = _ensure_postgres_scheme(database_url.strip())
