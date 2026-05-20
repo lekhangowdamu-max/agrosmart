@@ -18,7 +18,7 @@
             <span class="rental-tag">Tractor Rental</span>
             <h3>Powerful Tractor</h3>
             <p>Strong tractors for ploughing, hauling and powering attachments across your fields.</p>
-            <a href="/book/1" class="button">Book Now</a>
+            <a href="/book_machine/1" class="button">Book Now</a>
         </div>
     </article>
 
@@ -28,7 +28,7 @@
             <span class="rental-tag">Harvester Rental</span>
             <h3>Efficient Harvester</h3>
             <p>Harvest with ease using modern combines built for high efficiency and large crop loads.</p>
-            <a href="/book/2" class="button">Book Now</a>
+            <a href="/book_machine/2" class="button">Book Now</a>
         </div>
     </article>
 
@@ -38,7 +38,7 @@
             <span class="rental-tag">Plough Machine</span>
             <h3>Heavy Plough</h3>
             <p>Turn soil quickly and prepare your land for planting with a dependable plough machine.</p>
-            <a href="/book/3" class="button">Book Now</a>
+            <a href="/book_machine/3" class="button">Book Now</a>
         </div>
     </article>
 
@@ -48,7 +48,7 @@
             <span class="rental-tag">Cultivator Rental</span>
             <h3>Field Cultivator</h3>
             <p>Prepare seedbeds and control weeds with a cultivator designed for even soil cultivation.</p>
-            <a href="/book/4" class="button">Book Now</a>
+            <a href="/book_machine/4" class="button">Book Now</a>
         </div>
     </article>
 
@@ -58,7 +58,7 @@
             <span class="rental-tag">Seeder Rental</span>
             <h3>Precision Seeder</h3>
             <p>Plant seeds accurately in rows with a seeder built for efficient, modern farming.</p>
-            <a href="/book/5" class="button">Book Now</a>
+            <a href="/book_machine/5" class="button">Book Now</a>
         </div>
     </article>
 </section>
@@ -96,7 +96,7 @@
                         <td>{{ machine.location }}</td>
                         <td>{{ machine.price_per_day }}</td>
                         <td>{{ machine.owner_contact }}</td>
-                        <td><a class="button button-secondary" href="/book/{{ machine.id }}">Book</a></td>
+                        <td><a class="button button-secondary" href="/book_machine/{{ machine.id }}">Book</a></td>
                     </tr>
                 {% endfor %}
             </tbody>

@@ -1,16 +1,106 @@
 ﻿import os
+from datetime import date, timedelta
+from types import SimpleNamespace
+from urllib.parse import quote_plus
 
 from flask import Flask, flash, redirect, render_template, render_template_string, request, url_for
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
+from dotenv import load_dotenv
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from database import configure_app, db
+from location_data import COMMON_CROPS, CROP_KANNADA_NAMES, INDIA_STATE_DISTRICTS, STATE_CROP_OVERRIDES
 from models import Booking, CropPrice, DroneLog, DroneTelemetry, Machinery, Upload, User
 
 login_manager = LoginManager()
 
 LOGO_URL = "/static/logo.svg"
+
+load_dotenv()
+
+
+def merge_sorted(*groups):
+    values = []
+    seen = set()
+    for group in groups:
+        for item in group or []:
+            if not item:
+                continue
+            clean_item = str(item).strip()
+            key = clean_item.casefold()
+            if clean_item and key not in seen:
+                values.append(clean_item)
+                seen.add(key)
+    return sorted(values, key=str.casefold)
+
+
+def crop_label(crop):
+    kannada_name = CROP_KANNADA_NAMES.get(crop)
+    return f"{crop} ({kannada_name})" if kannada_name else crop
+
+
+def google_maps_search_url(query):
+    return f"https://www.google.com/maps/search/?api=1&query={quote_plus(query)}"
+
+
+def google_maps_directions_url(destination, origin=None):
+    url = f"https://www.google.com/maps/dir/?api=1&destination={quote_plus(destination)}&travelmode=driving"
+    if origin:
+        url += f"&origin={quote_plus(origin)}"
+    return url
+
+
+def google_maps_embed_url(query, api_key):
+    if not api_key or api_key == "your_google_maps_api_key":
+        return None
+    return f"https://www.google.com/maps/embed/v1/place?key={quote_plus(api_key)}&q={quote_plus(query)}"
+
+
+def market_location_query(market, district, state):
+    parts = [market, district, state, "agricultural market India"]
+    return ", ".join(part for part in parts if part)
+
+
+def build_indicative_crop_prices(state, district, crop):
+    base_prices = {
+        "Arecanut": 36000, "Bajra": 2200, "Banana": 1800, "Barley": 2100, "Black Gram": 7600,
+        "Brinjal": 1600, "Cabbage": 1200, "Cardamom": 95000, "Cashew": 9800, "Castor Seed": 6200,
+        "Cauliflower": 1500, "Chilli": 13500, "Coconut": 2600, "Coffee": 18500, "Coriander": 7200,
+        "Cotton": 6600, "Cucumber": 1300, "Garlic": 9500, "Ginger": 8200, "Gram": 5600,
+        "Grapes": 4200, "Green Gram": 7800, "Groundnut": 6200, "Guava": 2400, "Jowar": 3100,
+        "Jute": 4800, "Lentil": 6200, "Linseed": 5600, "Maize": 2100, "Mango": 3800,
+        "Masur": 6200, "Mustard": 5400, "Onion": 2200, "Orange": 3600, "Paddy": 2300,
+        "Pea": 4200, "Pepper": 52000, "Pomegranate": 6800, "Potato": 1600, "Ragi": 3800,
+        "Rapeseed": 5400, "Red Gram": 8600, "Rice": 3200, "Rubber": 15000, "Sesamum": 11500,
+        "Soybean": 4700, "Sugarcane": 3400, "Sunflower": 6100, "Tea": 21000, "Tobacco": 8800,
+        "Tomato": 1800, "Turmeric": 12500, "Wheat": 2400,
+    }
+    base = base_prices.get(crop, 3500)
+    location = district or state or "India"
+    seed = sum(ord(char) for char in f"{state}|{district}|{crop}") % 19
+    modal = int(base * (0.92 + seed / 100))
+    rows = []
+
+    for index, market_name in enumerate([
+        f"{location} APMC Market",
+        f"{location} Wholesale Market",
+        f"{location} Local Mandi",
+    ]):
+        adjustment = (index - 1) * 85 + seed * 12
+        row_modal = max(100, modal + adjustment)
+        rows.append(SimpleNamespace(
+            commodity=crop,
+            kannada_name=CROP_KANNADA_NAMES.get(crop, crop),
+            market=market_name,
+            min_price=max(50, row_modal - 180),
+            max_price=row_modal + 220,
+            modal_price=row_modal,
+            arrival_date=date.today() - timedelta(days=index),
+            is_estimated=True,
+        ))
+
+    return rows
 
 print("Flask app starting...")
 
@@ -18,6 +108,7 @@ print("Flask app starting...")
 def create_app():
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
+    app.config["GOOGLE_MAPS_API_KEY"] = os.environ.get("GOOGLE_MAPS_API_KEY", "").strip()
     configure_app(app)
     print("Environment loaded...")
     print("Connecting to database...")
@@ -215,6 +306,7 @@ def book_machine(machine_id):
     from datetime import datetime
     
     machine = Machinery.query.get_or_404(machine_id)
+    today = datetime.now().strftime('%Y-%m-%d')
     
     if request.method == "POST":
         start_date = request.form.get("start_date")
@@ -263,7 +355,7 @@ def book_machine(machine_id):
             flash("Invalid date format.", "error")
             return redirect(url_for("book_machine", machine_id=machine_id))
     
-    return render_template("book_machine.html", machine=machine)
+    return render_template("book_machine.html", machine=machine, today=today)
 
 
 @app.route("/cancel_booking/<int:booking_id>", methods=["POST"])
@@ -292,6 +384,12 @@ def track_booking(booking_id):
     machine = Machinery.query.get(booking.machine_id)
     
     return render_template("booking_track.html", booking=booking, machine=machine)
+
+
+@app.route("/profile")
+@login_required
+def profile():
+    return render_template("profile.html", profile=current_user, edit=False)
 
 
 @app.route("/profile/edit", methods=["GET", "POST"])
@@ -412,17 +510,6 @@ def admin_booking_action(booking_id, action):
     return redirect(url_for("admin_panel"))
 
 
-    return render_template("admin.html", 
-                         user_count=user_count,
-                         machinery_count=machinery_count,
-                         price_count=price_count,
-                         booking_count=booking_count,
-                         pending_bookings=pending_bookings_count,
-                         top_machines=top_machines,
-                         pending_bookings_list=pending_bookings, 
-                         approved_bookings=approved_bookings)
-
-
 @app.route("/admin/bookings")
 @login_required
 def admin_bookings():
@@ -502,26 +589,54 @@ def prices():
     selected_district = request.args.get('district', '')
     selected_crop = request.args.get('crop', '')
     
-    # Get unique values for dropdowns
-    states = db.session.query(CropPrice.state).distinct().filter(CropPrice.state.isnot(None)).all()
-    states = [s[0] for s in states]
-    
+    db_states = [
+        state
+        for (state,) in db.session.query(CropPrice.state)
+        .distinct()
+        .filter(CropPrice.state.isnot(None))
+        .all()
+    ]
+    states = merge_sorted(INDIA_STATE_DISTRICTS.keys(), db_states)
+
+    db_district_map = {}
+    for state, district in (
+        db.session.query(CropPrice.state, CropPrice.district)
+        .distinct()
+        .filter(CropPrice.state.isnot(None), CropPrice.district.isnot(None))
+        .all()
+    ):
+        db_district_map.setdefault(state, []).append(district)
+
+    db_crop_map = {}
+    for state, crop in (
+        db.session.query(CropPrice.state, CropPrice.commodity)
+        .distinct()
+        .filter(CropPrice.state.isnot(None), CropPrice.commodity.isnot(None))
+        .all()
+    ):
+        db_crop_map.setdefault(state, []).append(crop)
+
+    district_options = {
+        state: merge_sorted(INDIA_STATE_DISTRICTS.get(state, []), db_district_map.get(state, []))
+        for state in states
+    }
+    crop_options = {
+        state: merge_sorted(STATE_CROP_OVERRIDES.get(state, COMMON_CROPS), db_crop_map.get(state, []))
+        for state in states
+    }
+
     districts = []
-    crops = []
-    
     if selected_state:
-        districts_query = db.session.query(CropPrice.district).distinct().filter(
-            CropPrice.state == selected_state,
-            CropPrice.district.isnot(None)
-        ).all()
-        districts = [d[0] for d in districts_query]
-    
+        districts = district_options.get(selected_state, [])
+
+    crop_query = db.session.query(CropPrice.commodity).distinct().filter(CropPrice.commodity.isnot(None))
+    if selected_state:
+        crop_query = crop_query.filter(CropPrice.state == selected_state)
     if selected_district:
-        crops_query = db.session.query(CropPrice.commodity).distinct().filter(
-            CropPrice.district == selected_district,
-            CropPrice.commodity.isnot(None)
-        ).all()
-        crops = [c[0] for c in crops_query]
+        crop_query = crop_query.filter(CropPrice.district == selected_district)
+    db_crops = [crop for (crop,) in crop_query.all()]
+    fallback_crops = crop_options.get(selected_state, COMMON_CROPS) if selected_state else COMMON_CROPS
+    crops = merge_sorted(fallback_crops, db_crops)
     
     # Filter prices based on selections
     query = CropPrice.query
@@ -534,21 +649,45 @@ def prices():
         query = query.filter(CropPrice.commodity == selected_crop)
     
     prices = query.order_by(CropPrice.arrival_date.desc()).limit(50).all()
-    
-    # Add kannada names (simplified mapping)
-    kannada_names = {
-        'Rice': 'ಅಕ್ಕಿ',
-        'Wheat': 'ಗೋಧಿ',
-        'Maize': 'ಮೆಕ್ಕೆಜೋಳ',
-        'Sugarcane': 'ಕಬ್ಬು',
-        'Cotton': 'ಹತ್ತಿ',
-        'Groundnut': 'ಕಡಲೆಕಾಯಿ',
-        'Turmeric': 'ಅರಿಶಿನ',
-        'Chilli': 'ಮೆಣಸಿನಕಾಯಿ',
-    }
+    using_indicative_prices = False
+
+    if selected_crop and not prices:
+        prices = build_indicative_crop_prices(selected_state, selected_district, selected_crop)
+        using_indicative_prices = True
     
     for price in prices:
-        price.kannada_name = kannada_names.get(price.commodity, price.commodity)
+        price.kannada_name = CROP_KANNADA_NAMES.get(price.commodity, price.commodity)
+        if not hasattr(price, "is_estimated"):
+            price.is_estimated = False
+        price.location_query = market_location_query(price.market, selected_district, selected_state)
+        price.google_maps_url = google_maps_search_url(price.location_query)
+        price.google_directions_url = google_maps_directions_url(price.location_query)
+
+    selected_crop_details = None
+    if selected_crop:
+        modal_values = [price.modal_price for price in prices if price.modal_price is not None]
+        min_values = [price.min_price for price in prices if price.min_price is not None]
+        max_values = [price.max_price for price in prices if price.max_price is not None]
+        markets = merge_sorted([price.market for price in prices if price.market])
+        map_query = market_location_query(markets[0] if markets else selected_crop, selected_district, selected_state)
+        selected_crop_details = {
+            "crop": selected_crop,
+            "kannada_name": CROP_KANNADA_NAMES.get(selected_crop, "Kannada name not available"),
+            "state": selected_state or "All states",
+            "district": selected_district or "All districts",
+            "record_count": len(prices),
+            "market_count": len(markets),
+            "markets": markets[:8],
+            "min_price": min(min_values) if min_values else None,
+            "max_price": max(max_values) if max_values else None,
+            "modal_min": min(modal_values) if modal_values else None,
+            "modal_max": max(modal_values) if modal_values else None,
+            "is_estimated": using_indicative_prices,
+            "map_query": map_query,
+            "google_maps_url": google_maps_search_url(map_query),
+            "google_directions_url": google_maps_directions_url(map_query),
+            "google_maps_embed_url": google_maps_embed_url(map_query, app.config.get("GOOGLE_MAPS_API_KEY", "")),
+        }
     
     # Get price history for chart (last 30 days)
     price_history = None
@@ -563,6 +702,12 @@ def prices():
                 'dates': [str(h[0]) for h in reversed(history_query)],
                 'prices': [h[1] for h in reversed(history_query)]
             }
+    if selected_crop and not price_history and prices:
+        ordered_prices = list(reversed(prices[:3]))
+        price_history = {
+            "dates": [str(price.arrival_date) for price in ordered_prices],
+            "prices": [price.modal_price for price in ordered_prices],
+        }
     
     return render_template(
         "prices.html",
@@ -573,6 +718,11 @@ def prices():
         selected_state=selected_state,
         selected_district=selected_district,
         selected_crop=selected_crop,
+        district_options=district_options,
+        crop_options=crop_options,
+        common_crops=COMMON_CROPS,
+        crop_labels={crop: crop_label(crop) for crop in merge_sorted(COMMON_CROPS, CROP_KANNADA_NAMES.keys(), *crop_options.values())},
+        selected_crop_details=selected_crop_details,
         gov_details=[],
         price_history=price_history,
         error=None,

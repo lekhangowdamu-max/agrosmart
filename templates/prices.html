@@ -6,7 +6,7 @@
 
 <section class="panel">
     <h2>Crop Market Prices</h2>
-    <p>Real-time agricultural commodity prices from Karnataka markets.</p>
+    <p>Select any Indian state, district, and crop to check available market price records.</p>
 </section>
 
 <div class="card">
@@ -15,7 +15,7 @@
         <div class="filter-row">
             <div class="filter-group">
                 <label for="state">State:</label>
-                <select name="state" id="state" onchange="updateDistricts()">
+                <select name="state" id="state">
                     <option value="">Select State</option>
                     {% for state in states %}
                         <option value="{{ state }}" {% if state == selected_state %}selected{% endif %}>{{ state }}</option>
@@ -24,7 +24,7 @@
             </div>
             <div class="filter-group">
                 <label for="district">District:</label>
-                <select name="district" id="district" onchange="updateCrops()">
+                <select name="district" id="district">
                     <option value="">Select District</option>
                     {% for district in districts %}
                         <option value="{{ district }}" {% if district == selected_district %}selected{% endif %}>{{ district }}</option>
@@ -33,16 +33,71 @@
             </div>
             <div class="filter-group">
                 <label for="crop">Crop:</label>
-                <select name="crop" id="crop" onchange="submitForm()">
+                <select name="crop" id="crop">
                     <option value="">Select Crop</option>
                     {% for crop in crops %}
-                        <option value="{{ crop }}" {% if crop == selected_crop %}selected{% endif %}>{{ crop }}</option>
+                        <option value="{{ crop }}" {% if crop == selected_crop %}selected{% endif %}>{{ crop_labels.get(crop, crop) }}</option>
                     {% endfor %}
                 </select>
             </div>
         </div>
     </form>
 </div>
+
+{% if selected_crop_details %}
+<div class="card crop-detail-card">
+    <p class="eyebrow">Selected Crop Details</p>
+    <h3>{{ selected_crop_details.crop }} <span>{{ selected_crop_details.kannada_name }}</span></h3>
+    {% if selected_crop_details.is_estimated %}
+        <p class="estimate-note">Showing indicative sample prices because no saved market record exists for this exact selection.</p>
+    {% endif %}
+    <div class="crop-detail-grid">
+        <div>
+            <strong>Location</strong>
+            <p>{{ selected_crop_details.district }}, {{ selected_crop_details.state }}</p>
+        </div>
+        <div>
+            <strong>Available records</strong>
+            <p>{{ selected_crop_details.record_count }} price record{{ '' if selected_crop_details.record_count == 1 else 's' }}</p>
+        </div>
+        <div>
+            <strong>Markets</strong>
+            {% if selected_crop_details.markets %}
+                <p>{{ selected_crop_details.markets | join(', ') }}</p>
+                <p><a class="js-directions-link" href="{{ selected_crop_details.google_directions_url }}" data-destination="{{ selected_crop_details.map_query }}" target="_blank" rel="noopener">Directions to selected market</a></p>
+            {% else %}
+                <p>No market record available for this selection yet.</p>
+            {% endif %}
+        </div>
+        <div>
+            <strong>Price range</strong>
+            {% if selected_crop_details.min_price is not none and selected_crop_details.max_price is not none %}
+                <p>Rs. {{ selected_crop_details.min_price }} - Rs. {{ selected_crop_details.max_price }}</p>
+            {% else %}
+                <p>Price range not available.</p>
+            {% endif %}
+        </div>
+        <div>
+            <strong>Modal price range</strong>
+            {% if selected_crop_details.modal_min is not none and selected_crop_details.modal_max is not none %}
+                <p>Rs. {{ selected_crop_details.modal_min }} - Rs. {{ selected_crop_details.modal_max }}</p>
+            {% else %}
+                <p>Modal price not available.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% if selected_crop_details.google_maps_embed_url %}
+        <div class="crop-map-embed">
+            <iframe
+                title="{{ selected_crop_details.crop }} market map"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                src="{{ selected_crop_details.google_maps_embed_url }}">
+            </iframe>
+        </div>
+    {% endif %}
+</div>
+{% endif %}
 
 <div class="card">
     {% if prices %}
@@ -57,6 +112,8 @@
                         <th>Max Price</th>
                         <th>Modal Price</th>
                         <th>Date</th>
+                        <th>Map</th>
+                        <th>Type</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -65,17 +122,25 @@
                             <td>{{ price.commodity or 'N/A' }}</td>
                             <td>{{ price.kannada_name or 'N/A' }}</td>
                             <td>{{ price.market or 'N/A' }}</td>
-                            <td>?{{ price.min_price or 'N/A' }}</td>
-                            <td>?{{ price.max_price or 'N/A' }}</td>
-                            <td>?{{ price.modal_price or 'N/A' }}</td>
+                            <td>Rs. {{ price.min_price or 'N/A' }}</td>
+                            <td>Rs. {{ price.max_price or 'N/A' }}</td>
+                            <td>Rs. {{ price.modal_price or 'N/A' }}</td>
                             <td>{{ price.arrival_date or 'N/A' }}</td>
+                            <td><a class="js-directions-link" href="{{ price.google_directions_url }}" data-destination="{{ price.location_query }}" target="_blank" rel="noopener">Directions</a></td>
+                            <td>
+                                {% if price.is_estimated %}
+                                    Indicative
+                                {% else %}
+                                    Saved record
+                                {% endif %}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     {% else %}
-        <p>Select state, district, and crop to view prices.</p>
+        <p>No price records found for this selection yet. You can still choose from the full state, district, and crop list above.</p>
     {% endif %}
 </div>
 
@@ -137,33 +202,151 @@
 .chart-container canvas {
     max-width: 100%;
 }
+
+.crop-detail-card h3 span {
+    color: var(--primary-dark);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-left: 0.35rem;
+}
+
+.crop-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1rem;
+}
+
+.crop-detail-grid div {
+    padding: 1rem;
+    border: 1px solid rgba(47, 143, 79, 0.14);
+    border-radius: 14px;
+    background: #f8fbf6;
+}
+
+.crop-detail-grid strong {
+    display: block;
+    color: var(--primary-dark);
+    margin-bottom: 0.35rem;
+}
+
+.crop-detail-grid p {
+    margin: 0;
+}
+
+.estimate-note {
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    background: #fff8e1;
+    color: #7a5300;
+    border: 1px solid #f2d27a;
+}
+
+.crop-map-embed {
+    margin-top: 1.25rem;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgba(47, 143, 79, 0.16);
+}
+
+.crop-map-embed iframe {
+    display: block;
+    width: 100%;
+    min-height: 320px;
+    border: 0;
+}
 </style>
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-{% if price_history %}
 <script>
-function updateDistricts() {
-    document.getElementById('district').value = '';
-    document.getElementById('crop').value = '';
-    submitForm();
+const districtOptions = {{ district_options | tojson | safe }};
+const cropOptions = {{ crop_options | tojson | safe }};
+const commonCrops = {{ common_crops | tojson | safe }};
+const cropLabels = {{ crop_labels | tojson | safe }};
+const selectedDistrict = {{ selected_district | tojson | safe }};
+const selectedCrop = {{ selected_crop | tojson | safe }};
+
+const filterForm = document.getElementById('filter-form');
+const stateSelect = document.getElementById('state');
+const districtSelect = document.getElementById('district');
+const cropSelect = document.getElementById('crop');
+const directionLinks = document.querySelectorAll('.js-directions-link');
+
+function setOptions(select, placeholder, values, selectedValue) {
+    select.innerHTML = '';
+
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = '';
+    placeholderOption.textContent = placeholder;
+    select.appendChild(placeholderOption);
+
+    values.forEach(function(value) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = select.id === 'crop' ? (cropLabels[value] || value) : value;
+        option.selected = value === selectedValue;
+        select.appendChild(option);
+    });
 }
 
-function updateCrops() {
-    document.getElementById('crop').value = '';
-    submitForm();
+function updateDistricts(keepSelected) {
+    const state = stateSelect.value;
+    const districts = state ? (districtOptions[state] || []) : [];
+    setOptions(districtSelect, 'Select District', districts, keepSelected ? selectedDistrict : '');
+    updateCrops(keepSelected);
+}
+
+function updateCrops(keepSelected) {
+    const state = stateSelect.value;
+    const crops = state ? (cropOptions[state] || commonCrops) : commonCrops;
+    setOptions(cropSelect, 'Select Crop', crops, keepSelected ? selectedCrop : '');
 }
 
 function submitForm() {
-    document.getElementById('filter-form').submit();
+    filterForm.submit();
 }
 
+stateSelect.addEventListener('change', function() {
+    updateDistricts(false);
+});
+
+districtSelect.addEventListener('change', function() {
+    updateCrops(false);
+});
+
+cropSelect.addEventListener('change', submitForm);
+
+updateDistricts(true);
+
+function applyDirectionsOrigin(latitude, longitude) {
+    const origin = `${latitude},${longitude}`;
+    directionLinks.forEach(function(link) {
+        const destination = link.dataset.destination;
+        const params = new URLSearchParams({
+            api: '1',
+            origin: origin,
+            destination: destination,
+            travelmode: 'driving'
+        });
+        link.href = `https://www.google.com/maps/dir/?${params.toString()}`;
+    });
+}
+
+if (directionLinks.length && navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+        applyDirectionsOrigin(position.coords.latitude, position.coords.longitude);
+    });
+}
+</script>
+
+{% if price_history %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
 // Initialize and render price chart
 window.addEventListener('DOMContentLoaded', function() {
     const priceHistory = {{ price_history | tojson | safe }};
-    const dates = priceHistory.map(item => item.date);
-    const prices = priceHistory.map(item => item.price);
+    const dates = priceHistory.dates || [];
+    const prices = priceHistory.prices || [];
 
     const ctx = document.getElementById('priceChart');
     if (ctx) {
@@ -172,7 +355,7 @@ window.addEventListener('DOMContentLoaded', function() {
             data: {
                 labels: dates,
                 datasets: [{
-                    label: '{{ selected_crop }} Price (₹)',
+                    label: '{{ selected_crop }} Price (Rs.)',
                     data: prices,
                     borderColor: '#2ecc71',
                     backgroundColor: 'rgba(46, 204, 113, 0.1)',
@@ -209,7 +392,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         beginAtZero: false,
                         title: {
                             display: true,
-                            text: 'Price (₹)'
+                            text: 'Price (Rs.)'
                         },
                         grid: {
                             color: 'rgba(200, 200, 200, 0.1)'

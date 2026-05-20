@@ -5,9 +5,84 @@
 {% block content %}
 <section class="panel">
     <h2>Your Profile</h2>
-    <p>Manage your farmer profile and original location data.</p>
+    <p>Manage your farmer profile and location data.</p>
 </section>
 
+{% if edit %}
+<!-- EDIT PROFILE MODE -->
+<section class="panel profile-edit">
+    <h2>Edit Profile</h2>
+    <form method="POST" enctype="multipart/form-data" class="form-group">
+        <div class="form-section">
+            <h3>Profile Photo</h3>
+            <div class="profile-photo-section">
+                {% if profile.photo %}
+                    <img src="/static/{{ profile.photo }}" alt="Current profile photo" class="profile-photo-large">
+                {% else %}
+                    <img src="https://via.placeholder.com/220?text=Farmer" alt="Farmer photo" class="profile-photo-large">
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label for="photo">Upload New Photo:</label>
+                <input type="file" id="photo" name="photo" accept="image/*">
+                <small>Supported formats: JPG, PNG, GIF (Max 5MB)</small>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Personal Information</h3>
+            
+            <div class="form-group">
+                <label for="name">Full Name:</label>
+                <input type="text" id="name" name="name" value="{{ profile.name or '' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address:</label>
+                <input type="email" id="email" name="email" value="{{ profile.email or '' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number:</label>
+                <input type="tel" id="phone" name="phone" value="{{ profile.phone or '' }}" placeholder="10-digit phone number">
+            </div>
+
+            <div class="form-group">
+                <label for="location">Location:</label>
+                <input type="text" id="location" name="location" value="{{ profile.location or '' }}" placeholder="Your farm location">
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Profile Status</h3>
+            <p><strong>Role:</strong> {{ profile.role|title if profile.role else 'Farmer' }}</p>
+            <p><strong>Phone Verified:</strong> {{ 'Yes ✓' if profile.phone_verified else 'No - Please verify via OTP' }}</p>
+            <p><strong>User ID:</strong> {{ profile.id }}</p>
+        </div>
+
+        {% if profile.role == 'admin' %}
+        <div class="form-section">
+            <h3>Admin Information</h3>
+            <p><strong>Aadhaar:</strong> {{ profile.aadhaar or 'Not provided' }}</p>
+            <p><strong>Driving License:</strong> {{ profile.driving_license or 'Not provided' }}</p>
+            <p><strong>Ration Card:</strong> {{ profile.ration_card or 'Not provided' }}</p>
+            <p><strong>Vehicle Number:</strong> {{ profile.vehicle_number or 'Not provided' }}</p>
+            {% if profile.vehicle_image %}
+                <p><strong>Vehicle Photo:</strong></p>
+                <img src="/static/{{ profile.vehicle_image }}" alt="Vehicle image" style="max-width: 260px; border-radius: 12px; margin-top: 0.75rem;">
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <button type="submit" class="button button-primary">Save Changes</button>
+            <a href="/profile" class="button button-secondary">Cancel</a>
+        </div>
+    </form>
+</section>
+
+{% else %}
+<!-- VIEW PROFILE MODE -->
 <section class="panel profile-top">
     <div class="profile-avatar">
         {% if profile.photo %}
@@ -17,8 +92,10 @@
         {% endif %}
     </div>
     <div class="profile-details">
-        <h2>Your Profile</h2>
-        <p>Manage your farmer profile and original location data.</p>
+        <h2>{{ profile.name }}</h2>
+        <p><strong>Role:</strong> {{ profile.role|title if profile.role else 'Farmer' }}</p>
+        <p><strong>Email:</strong> {{ profile.email }}</p>
+        <p><strong>Phone:</strong> {{ profile.phone or 'Not set' }}</p>
     </div>
 </section>
 
@@ -40,5 +117,113 @@
         {% endif %}
     {% endif %}
     <p><strong>User ID:</strong> {{ profile.id }}</p>
+    <div class="profile-actions">
+        <a href="/profile/edit" class="button button-primary">Edit Profile</a>
+        <a href="/dashboard" class="button button-secondary">Back to Dashboard</a>
+    </div>
 </div>
+{% endif %}
+
+<style>
+.profile-edit {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.profile-photo-section {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.profile-photo-large {
+    max-width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #4d6d89;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.form-section h3 {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group input[type="file"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 0.25rem;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.profile-actions {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.button-primary {
+    background-color: #4d6d89;
+    color: white;
+}
+
+.button-primary:hover {
+    background-color: #3d5d79;
+}
+
+.button-secondary {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.button-secondary:hover {
+    background-color: #d0d0d0;
+}
+</style>
 {% endblock %}
