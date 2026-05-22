@@ -26,7 +26,7 @@ def get_sqlite_conn():
 
 def table_exists(conn, table_name):
     cursor = conn.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+    cursor.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,)))
     return cursor.fetchone() is not None
 
 

@@ -1,4 +1,5 @@
-﻿import os
+﻿from sqlalchemy import text
+import os
 from datetime import date, timedelta
 from types import SimpleNamespace
 from urllib.parse import quote_plus
@@ -137,7 +138,7 @@ def create_app():
         database_url = app.config.get("SQLALCHEMY_DATABASE_URI", "")
         if database_url.startswith("postgresql://"):
             try:
-                db.session.execute("SELECT 1")
+                db.session.execute(text("SELECT 1"))
             except OperationalError as exc:
                 app.logger.warning("Database connection ping failed: %s", exc)
                 db.session.rollback()
