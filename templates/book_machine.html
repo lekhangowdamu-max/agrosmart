@@ -19,11 +19,17 @@
                 <p><strong>Tracking:</strong> {{ machine.tracking_location }}</p>
             {% endif %}
         </div>
-        {% if machine.image_url %}
-            <div class="machine-image-large">
-                <img src="/static/{{ machine.image_url }}" alt="{{ machine.name }}">
-            </div>
-        {% endif %}
+        <div class="machine-image-large">
+    {% if machine.image_url %}
+        <img src="{{ url_for('static', filename=machine.image_url) }}"
+             alt="{{ machine.name }}"
+             class="booking-machine-image">
+    {% else %}
+        <img src="https://via.placeholder.com/400x300?text=No+Machine+Image"
+             alt="No image"
+             class="booking-machine-image">
+    {% endif %}
+</div>
     </div>
 
     <form method="POST" class="booking-form">
@@ -91,12 +97,17 @@ document.addEventListener('DOMContentLoaded', function() {
     flex: 1;
 }
 
-.machine-image-large img {
-    max-width: 300px;
-    height: auto;
-    border-radius: 8px;
+.machine-image-large {
+    width: 350px;
 }
 
+.booking-machine-image {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+}
 .booking-form {
     max-width: 500px;
 }
