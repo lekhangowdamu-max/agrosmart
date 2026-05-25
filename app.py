@@ -117,7 +117,7 @@ def create_app():
     try:
         db.init_app(app)
         with app.app_context():
-            db.create_all()
+            pass
         print("Database connected successfully")
     except Exception as e:
         print("DATABASE ERROR:", str(e))
