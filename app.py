@@ -127,11 +127,12 @@ def create_app():
 
     @app.errorhandler(SQLAlchemyError)
     def handle_database_error(error):
-        app.logger.error("Database error: %s", error)
-        return render_template_string(
-            "<h1>Service unavailable</h1>"
-            "<p>We are unable to reach the database right now. Please try again later.</p>"
-        ), 503
+
+        print("SQL ERROR:", error)
+
+        return {
+        "database_error": str(error)
+    }, 500
 
     @app.before_request
     def ping_database():
@@ -187,9 +188,14 @@ def home():
 
 @app.route("/health")
 def health():
+
     return {
         "status": "running",
-        "database": "disabled_for_test"
+        "database_uri_exists": bool(
+            app.config.get(
+                "SQLALCHEMY_DATABASE_URI"
+            )
+        )
     }, 200
 
 
