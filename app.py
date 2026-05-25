@@ -439,11 +439,36 @@ def edit_profile():
         
         # Handle file upload for profile photo
         if 'photo' in request.files:
-            photo_file = request.files['photo']
-            if photo_file and photo_file.filename:
-                filename = f"user_{current_user.id}_{photo_file.filename}"
-                photo_file.save(os.path.join("static", "profiles", filename))
-                current_user.photo = f"profiles/{filename}"
+    photo_file = request.files['photo']
+
+    if photo_file and photo_file.filename:
+
+        upload_folder = os.path.join(
+            app.root_path,
+            "static",
+            "profiles"
+        )
+
+        os.makedirs(
+            upload_folder,
+            exist_ok=True
+        )
+
+        filename = (
+            f"user_{current_user.id}_"
+            f"{photo_file.filename}"
+        )
+
+        save_path = os.path.join(
+            upload_folder,
+            filename
+        )
+
+        photo_file.save(save_path)
+
+        current_user.photo = (
+            f"profiles/{filename}"
+        )
         
         db.session.commit()
         flash("Profile updated successfully!", "success")
