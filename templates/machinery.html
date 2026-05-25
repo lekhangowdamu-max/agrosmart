@@ -22,46 +22,45 @@
         </div>
     </article>
 
-    <article class="rental-card">
-        <img src="https://static.agriculture-machine.com/wp-content/uploads/2023/11/combine-harvester-for-sale.webp" alt="Harvester machine">
-        <div class="rental-card-body">
-            <span class="rental-tag">Harvester Rental</span>
-            <h3>Efficient Harvester</h3>
-            <p>Harvest with ease using modern combines built for high efficiency and large crop loads.</p>
-            <a href="/book_machine/2" class="button">Book Now</a>
-        </div>
-    </article>
+   {% for machine in machines %}
+<article class="rental-card">
 
-    <article class="rental-card">
-        <img src="https://5.imimg.com/data5/ANDROID/Default/2022/7/QE/NX/EZ/21184898/product-jpeg-500x500.jpg" alt="Heavy plough machine">
-        <div class="rental-card-body">
-            <span class="rental-tag">Plough Machine</span>
-            <h3>Heavy Plough</h3>
-            <p>Turn soil quickly and prepare your land for planting with a dependable plough machine.</p>
-            <a href="/book_machine/3" class="button">Book Now</a>
-        </div>
-    </article>
+    {% if machine.image_url %}
+    <img src="/static/{{ machine.image_url }}"
+         alt="{{ machine.name }}">
+    {% else %}
+    <img src="https://via.placeholder.com/300"
+         alt="Machine">
+    {% endif %}
 
-    <article class="rental-card">
-        <img src="https://5.imimg.com/data5/SELLER/Default/2024/5/417356262/AF/NT/VN/174709/power-tiller-1000x1000.png" alt="Cultivator machine">
-        <div class="rental-card-body">
-            <span class="rental-tag">Cultivator Rental</span>
-            <h3>Field Cultivator</h3>
-            <p>Prepare seedbeds and control weeds with a cultivator designed for even soil cultivation.</p>
-            <a href="/book_machine/4" class="button">Book Now</a>
-        </div>
-    </article>
+    <div class="rental-card-body">
 
-    <article class="rental-card">
-        <img src="https://m.media-amazon.com/images/I/71ftZ+YlAGL._AC_SL1000_.jpg" alt="Precision Seeder">
-        <div class="rental-card-body">
-            <span class="rental-tag">Seeder Rental</span>
-            <h3>Precision Seeder</h3>
-            <p>Plant seeds accurately in rows with a seeder built for efficient, modern farming.</p>
-            <a href="/book_machine/5" class="button">Book Now</a>
-        </div>
-    </article>
-</section>
+        <span class="rental-tag">
+            Machinery Rental
+        </span>
+
+        <h3>{{ machine.name }}</h3>
+
+        <p>
+            Location:
+            {{ machine.location }}
+        </p>
+
+        <p>
+            ₹{{ machine.price_per_day }}/day
+        </p>
+
+        <a href="/book_machine/{{ machine.id }}"
+           class="button">
+
+           Book Now
+
+        </a>
+
+    </div>
+
+</article>
+{% endfor %}
 
 <section class="panel">
     <h2>Available Machinery Listings</h2>
