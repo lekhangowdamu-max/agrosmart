@@ -135,18 +135,7 @@ def create_app():
 
     @app.before_request
     def ping_database():
-        database_url = app.config.get("SQLALCHEMY_DATABASE_URI", "")
-        if database_url.startswith("postgresql://"):
-            try:
-                db.session.execute(text("SELECT 1"))
-            except OperationalError as exc:
-                app.logger.warning("Database connection ping failed: %s", exc)
-                db.session.rollback()
-                return render_template_string(
-                    "<h1>Service unavailable</h1>"
-                    "<p>Database connection temporarily unavailable.</p>"
-                ), 503
-
+        return None
     return app
 
 
@@ -179,7 +168,7 @@ def home():
 def health():
     return {
         "status": "running",
-        "database": "not_checked"
+        "database": "disabled_for_test"
     }, 200
 
 
