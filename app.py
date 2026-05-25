@@ -161,8 +161,29 @@ def inject_user():
 
 @app.route("/")
 def home():
-    return render_template("home.html")
 
+    try:
+
+        machine_count = Machinery.query.count()
+
+        crop_count = CropPrice.query.count()
+
+        booking_count = Booking.query.count()
+
+    except Exception as e:
+
+        print("HOME PAGE DB ERROR:", e)
+
+        machine_count = 0
+        crop_count = 0
+        booking_count = 0
+
+    return render_template(
+        "home.html",
+        machine_count=machine_count,
+        crop_count=crop_count,
+        booking_count=booking_count
+    )
 
 @app.route("/health")
 def health():
