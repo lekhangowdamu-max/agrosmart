@@ -178,8 +178,9 @@ def home():
 @app.route("/health")
 def health():
     return {
-        "status": "running"
-    }
+        "status": "running",
+        "database": "not_checked"
+    }, 200
 
 
 @app.route("/login", methods=["GET", "POST"])
