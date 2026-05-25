@@ -439,7 +439,7 @@ def edit_profile():
         
         # Handle file upload for profile photo
         if 'photo' in request.files:
-    photo_file = request.files['photo']
+            photo_file = request.files['photo']
 
     if photo_file and photo_file.filename:
 
