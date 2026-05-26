@@ -844,7 +844,11 @@ def weather():
         location = current_user.location
 
     weather_data = fetch_weather(location, app.config.get("OPENWEATHER_API_KEY", ""))
-    return render_template("weather.html", weather=weather_data)
+    return render_template(
+        "weather.html",
+        weather=weather_data,
+        openweather_api_key=app.config.get("OPENWEATHER_API_KEY", ""),
+    )
 
 
 @app.route("/motor")

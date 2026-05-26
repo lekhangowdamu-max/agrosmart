@@ -83,6 +83,7 @@ DB_PASSWORD=your-secure-password
 DB_NAME=agrosmart
 SECRET_KEY=generate-a-random-string-here
 GOOGLE_MAPS_API_KEY=your-google-maps-api-key
+OPENWEATHER_API_KEY=your-openweather-api-key
 ```
 
 ### For Drone Backend
