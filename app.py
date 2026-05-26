@@ -1,8 +1,11 @@
 ﻿from sqlalchemy import text
+import json
 import os
 from datetime import date, timedelta
 from types import SimpleNamespace
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus
+from urllib.request import urlopen
 
 from flask import Flask, flash, redirect, render_template, render_template_string, request, url_for
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
@@ -58,6 +61,41 @@ def google_maps_embed_url(query, api_key):
     return f"https://www.google.com/maps/embed/v1/place?key={quote_plus(api_key)}&q={quote_plus(query)}"
 
 
+def fetch_weather(location, api_key):
+    if not api_key:
+        return {"error": "Weather API key is not configured."}
+
+    url = (
+        "https://api.openweathermap.org/data/2.5/weather"
+        f"?q={quote_plus(location)}&appid={quote_plus(api_key)}&units=metric"
+    )
+
+    try:
+        with urlopen(url, timeout=8) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except HTTPError as error:
+        if error.code == 401:
+            return {"error": "Weather API key was rejected by OpenWeatherMap."}
+        if error.code == 404:
+            return {"error": f"Weather data was not found for {location}."}
+        return {"error": "Weather service returned an error. Please try again later."}
+    except (URLError, TimeoutError, json.JSONDecodeError):
+        return {"error": "Weather service is unavailable. Please try again later."}
+
+    weather = data.get("weather") or [{}]
+    main = data.get("main") or {}
+    wind = data.get("wind") or {}
+
+    return {
+        "location": data.get("name") or location,
+        "temperature": round(main.get("temp", 0)),
+        "feels_like": round(main.get("feels_like", 0)),
+        "description": (weather[0].get("description") or "Current conditions").title(),
+        "humidity": main.get("humidity", 0),
+        "wind": wind.get("speed", 0),
+    }
+
+
 def market_location_query(market, district, state):
     parts = [market, district, state, "agricultural market India"]
     return ", ".join(part for part in parts if part)
@@ -110,6 +148,7 @@ def create_app():
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
     app.config["GOOGLE_MAPS_API_KEY"] = os.environ.get("GOOGLE_MAPS_API_KEY", "").strip()
+    app.config["OPENWEATHER_API_KEY"] = os.environ.get("OPENWEATHER_API_KEY", "").strip()
     configure_app(app)
     print("Environment loaded...")
     print("Connecting to database...")
@@ -800,7 +839,12 @@ def map_view():
 
 @app.route("/weather")
 def weather():
-    return render_template("weather.html", weather={"error": "Weather service temporarily disabled"})
+    location = "Bangalore,IN"
+    if current_user.is_authenticated and current_user.location:
+        location = current_user.location
+
+    weather_data = fetch_weather(location, app.config.get("OPENWEATHER_API_KEY", ""))
+    return render_template("weather.html", weather=weather_data)
 
 
 @app.route("/motor")
