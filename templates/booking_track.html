@@ -19,20 +19,23 @@
         <p><strong>Assigned admin location:</strong> {{ destination or 'Not available' }}</p>
     </div>
 
-    {% if origin and destination %}
+    {% if google_maps_embed_url %}
     <div class="map-card">
         <iframe
             width="100%"
             height="500"
             frameborder="0"
             style="border:0; border-radius: 16px;"
-            src="https://www.google.com/maps/embed/v1/directions?key={{ google_maps_api_key|e }}&origin={{ origin_url }}&destination={{ destination_url }}&mode=driving"
+            src="{{ google_maps_embed_url }}"
             allowfullscreen>
         </iframe>
         <div style="margin-top: 1rem;">
             <a href="https://www.google.com/maps/dir/?api=1&origin={{ origin_url }}&destination={{ destination_url }}&travelmode=driving" target="_blank" class="button button-secondary">Open route in Google Maps</a>
         </div>
     </div>
+    {% elif origin and destination %}
+        <p class="form-error">Google Maps API key is not configured. Add <strong>GOOGLE_MAPS_API_KEY</strong> to your .env file.</p>
+        <a href="https://www.google.com/maps/dir/?api=1&origin={{ origin_url }}&destination={{ destination_url }}&travelmode=driving" target="_blank" class="button button-secondary">Open route in Google Maps</a>
     {% else %}
         <p class="form-error">Unable to show directions because location details are missing.</p>
     {% endif %}

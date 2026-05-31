@@ -710,9 +710,69 @@ textarea {
     gap: 1.5rem;
 }
 
-#map {
-    min-height: 520px;
-    border-radius: 20px;
+.map-open-link {
+    justify-self: start;
+}
+
+.highlighted-map-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    padding: 0.95rem 1.35rem;
+    background: #f2b705;
+    color: #1f2a24;
+    border: 2px solid #c78f00;
+    box-shadow: 0 10px 24px rgba(199, 143, 0, 0.24);
+    font-weight: 800;
+}
+
+.highlighted-map-link:hover,
+.highlighted-map-link:focus {
+    background: #ffd257;
+    color: #1f2a24;
+    transform: translateY(-1px);
+}
+
+.map-config-error {
+    margin: 0;
+}
+
+.map-direction-panel {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.district-select {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1px solid #dce2ea;
+    border-radius: 14px;
+    background: #fff;
+    color: var(--text);
+    font: inherit;
+    margin: 0.5rem 0 1rem;
+}
+
+.district-market-list {
+    display: grid;
+    gap: 0.85rem;
+    margin-top: 1rem;
+}
+
+.location-enable-button {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.market-direction-link {
+    width: 100%;
+}
+
+.disabled-link {
+    opacity: 0.55;
+    pointer-events: auto;
+    cursor: not-allowed;
 }
 
 .map-section {
@@ -738,6 +798,34 @@ textarea {
 
 .map-search-card .button {
     width: auto;
+}
+
+.map-search-card select {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1px solid #dce2ea;
+    border-radius: 14px;
+    background: #fff;
+    color: var(--text);
+    font: inherit;
+    margin-bottom: 1rem;
+}
+
+.market-list {
+    display: grid;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.market-button {
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.market-button.active {
+    background: #2f8f4f;
+    color: #fff;
+    border-color: #2f8f4f;
 }
 
 .search-suggestions {

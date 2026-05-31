@@ -61,6 +61,18 @@ def google_maps_embed_url(query, api_key):
     return f"https://www.google.com/maps/embed/v1/place?key={quote_plus(api_key)}&q={quote_plus(query)}"
 
 
+def google_maps_directions_embed_url(origin, destination, api_key):
+    if not origin or not destination or not api_key or api_key == "your_google_maps_api_key":
+        return None
+    return (
+        "https://www.google.com/maps/embed/v1/directions"
+        f"?key={quote_plus(api_key)}"
+        f"&origin={quote_plus(origin)}"
+        f"&destination={quote_plus(destination)}"
+        "&mode=driving"
+    )
+
+
 def fetch_weather(location, api_key):
     if not api_key:
         return {"error": "Weather API key is not configured."}
@@ -441,8 +453,21 @@ def track_booking(booking_id):
     
     booking = Booking.query.filter_by(id=booking_id, user_id=current_user.id).first_or_404()
     machine = Machinery.query.get(booking.machine_id)
+    origin = current_user.location or ""
+    destination = booking.admin_location or ""
+    google_maps_api_key = app.config.get("GOOGLE_MAPS_API_KEY", "")
     
-    return render_template("booking_track.html", booking=booking, machine=machine)
+    return render_template(
+        "booking_track.html",
+        booking=booking,
+        machine=machine,
+        origin=origin,
+        destination=destination,
+        origin_url=quote_plus(origin),
+        destination_url=quote_plus(destination),
+        google_maps_api_key=google_maps_api_key,
+        google_maps_embed_url=google_maps_directions_embed_url(origin, destination, google_maps_api_key),
+    )
 
 
 @app.route("/profile")
@@ -818,9 +843,29 @@ def prices():
 def map_view():
     user_location = "Not set"
     user_coords = None
+    map_query = "Crop markets APMC Karnataka"
+    karnataka_districts = INDIA_STATE_DISTRICTS.get("Karnataka", [])
+    district_markets = {
+        district: [
+            {
+                "name": f"{district} APMC Market",
+                "query": f"{district} APMC Market, Karnataka",
+            },
+            {
+                "name": f"{district} Wholesale Crop Market",
+                "query": f"{district} wholesale crop market, Karnataka",
+            },
+            {
+                "name": f"{district} Local Mandi",
+                "query": f"{district} local mandi crop market, Karnataka",
+            },
+        ]
+        for district in karnataka_districts
+    }
     
     if current_user.is_authenticated and current_user.location:
         user_location = current_user.location
+        map_query = f"Crop markets APMC near {user_location}, Karnataka"
         # Try to get coordinates from location (simplified - in real app would use geocoding API)
         location_coords = {
             "Bangalore": [12.9716, 77.5946],
@@ -833,8 +878,15 @@ def map_view():
             "Shimoga": [13.9299, 75.5681],
         }
         user_coords = location_coords.get(user_location)
-    
-    return render_template("map.html", user_location=user_location, user_coords=user_coords)
+
+    return render_template(
+        "map.html",
+        user_location=user_location,
+        user_coords=user_coords,
+        karnataka_districts=karnataka_districts,
+        district_markets=district_markets,
+        google_maps_url=google_maps_search_url(map_query),
+    )
 
 
 @app.route("/weather")
