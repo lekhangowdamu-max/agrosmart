@@ -843,11 +843,12 @@ def weather():
     if current_user.is_authenticated and current_user.location:
         location = current_user.location
 
-    weather_data = fetch_weather(location, app.config.get("OPENWEATHER_API_KEY", ""))
+    openweather_api_key = app.config.get("OPENWEATHER_API_KEY", "")
+    weather_data = fetch_weather(location, openweather_api_key)
     return render_template(
         "weather.html",
         weather=weather_data,
-        openweather_api_key=app.config.get("OPENWEATHER_API_KEY", ""),
+        openweather_api_key=openweather_api_key,
     )
 
 
