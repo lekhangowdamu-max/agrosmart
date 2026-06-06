@@ -1,0 +1,29 @@
+{
+  "name": "AgroSmart",
+  "short_name": "AgroSmart",
+  "description": "AgroSmart helps farmers book machinery, view weather, and manage farm operations in a mobile-friendly PWA.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2a7f27",
+  "theme_color": "#2a7f27",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/static/logo-uploaded.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/static/logo-uploaded.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "/static/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ]
+}

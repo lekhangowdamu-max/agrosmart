@@ -7,7 +7,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus
 from urllib.request import urlopen
 
-from flask import Flask, flash, redirect, render_template, render_template_string, request, url_for
+from flask import Flask, flash, redirect, render_template, render_template_string, request, url_for, send_from_directory
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from dotenv import load_dotenv
@@ -192,6 +192,16 @@ def create_app():
 
 
 app = create_app()
+
+
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory(app.static_folder, 'manifest.json', mimetype='application/manifest+json')
+
+
+@app.route('/service-worker.js')
+def service_worker():
+    return send_from_directory(app.static_folder, 'service-worker.js', mimetype='application/javascript')
 
 
 @login_manager.user_loader

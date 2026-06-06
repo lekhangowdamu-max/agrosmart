@@ -2,7 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#2a7f27">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="AgroSmart">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="AgroSmart">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/static/logo-uploaded.png">
+    <link rel="icon" href="/static/logo-uploaded.png" type="image/png">
     <title>{% block title %}AgroSmart{% endblock %}</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -101,6 +110,8 @@
         </div>
     </header>
 
+    <button id="install-button" class="button button-primary" style="display:none; position:fixed; bottom:1rem; right:1rem; z-index:1001; padding:0.8rem 1.1rem; border-radius:0.5rem;">Install App</button>
+
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <div class="flash-messages">
@@ -151,6 +162,40 @@
 
         requestAnimationFrame(animate);
     })();
+    </script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(() => console.log('Service Worker registered successfully.'))
+                .catch(error => console.error('Service Worker registration failed:', error));
+        });
+    }
+
+    let deferredPrompt;
+    const installButton = document.getElementById('install-button');
+
+    window.addEventListener('beforeinstallprompt', event => {
+        event.preventDefault();
+        deferredPrompt = event;
+        if (installButton) {
+            installButton.style.display = 'block';
+            installButton.addEventListener('click', async () => {
+                installButton.style.display = 'none';
+                deferredPrompt.prompt();
+                const choiceResult = await deferredPrompt.userChoice;
+                console.log('PWA install choice:', choiceResult.outcome);
+                deferredPrompt = null;
+            });
+        }
+    });
+
+    window.addEventListener('appinstalled', () => {
+        console.log('AgroSmart was installed.');
+        if (installButton) {
+            installButton.style.display = 'none';
+        }
+    });
     </script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     {% block scripts %}{% endblock %}
