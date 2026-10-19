@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}AI Crop Doctor | AgroSmart{% endblock %}
+{% block content %}
+<div class="crop-doctor-page">
+  <a class="back-link" href="{{ url_for('dashboard') }}">← Back to dashboard</a>
+  <section class="doctor-hero">
+    <div class="doctor-hero-copy"><span class="eyebrow"><span class="status-dot"></span> AGROSMART INTELLIGENCE</span><h1>Meet your <span>AI Crop Doctor.</span></h1><p>Share a clear photo and a few details. Get cautious, easy-to-understand guidance on what may be affecting your crop.</p><div class="doctor-pills"><span>✦ Photo analysis</span><span>⌁ Practical next steps</span><span>🌿 Farmer-first guidance</span></div></div>
+    <div class="doctor-illustration" aria-hidden="true"><div class="doctor-leaf">🌿</div><span class="scan-ring ring-a"></span><span class="scan-ring ring-b"></span><span class="scan-spark spark-a">✦</span><span class="scan-spark spark-b">✧</span></div>
+  </section>
+
+  {% if error %}<div class="doctor-alert" role="alert"><strong>We couldn't analyze that yet.</strong><p>{{ error }}</p></div>{% endif %}
+
+  <div class="doctor-layout">
+    <section class="doctor-form-card">
+      <div class="doctor-card-heading"><span class="step-number">01</span><div><h2>Tell us about your crop</h2><p>Good details help the AI give more relevant guidance.</p></div></div>
+      {% if not ai_configured %}<div class="setup-notice"><strong>Setup needed</strong><p>The AI feature is ready in the code, but needs an OpenAI API key configured as a server environment variable before analysis can run. Never put the key in browser JavaScript or commit it to GitHub.</p></div>{% endif %}
+      <form method="post" enctype="multipart/form-data" class="doctor-form">
+        <label for="crop-name">Crop name <span>(optional)</span></label>
+        <input id="crop-name" name="crop_name" maxlength="100" placeholder="e.g. tomato, paddy, chilli" autocomplete="off">
+        <label for="crop-symptoms">What are you noticing? <span>(optional)</span></label>
+        <textarea id="crop-symptoms" name="symptoms" rows="4" maxlength="1200" placeholder="Describe leaf spots, yellowing, insects, wilting, when it started, or the crop's growth stage."></textarea>
+        <label for="crop-image">Upload a crop photo <span>(required)</span></label>
+        <div class="upload-zone"><input id="crop-image" name="crop_image" type="file" accept="image/jpeg,image/png,image/webp" required><span class="upload-symbol">↑</span><strong>Choose a clear image</strong><small>JPG, PNG or WEBP · Maximum 5 MB</small><span id="selected-image-name" class="selected-file" aria-live="polite">No image selected</span></div>
+        <button class="smart-button smart-button-primary doctor-submit" type="submit" {% if not ai_configured %}title="Configure OPENAI_API_KEY on the server to enable analysis"{% endif %}>Analyze crop photo <span aria-hidden="true">→</span></button>
+        <p class="privacy-note">Your image is processed in memory for this request and is not saved by this app to its upload folder. It is sent to the configured AI provider for analysis.</p>
+      </form>
+    </section>
+    <aside class="doctor-side-card"><div class="side-card-icon">✳</div><h3>How to get a better result</h3><ul><li>Take a sharp photo in natural light.</li><li>Capture the affected leaf and, if possible, the whole plant.</li><li>Include the crop name and when symptoms began.</li><li>Avoid filters and very dark or blurry images.</li></ul><div class="safety-callout"><strong>Important</strong><p>AI can make mistakes. Do not apply pesticides or change treatment based only on this result. Confirm serious or spreading crop problems with a local agriculture officer or qualified agronomist.</p></div></aside>
+  </div>
+  {% if result %}<section class="doctor-result" aria-live="polite"><div class="result-heading"><span class="result-check">✓</span><div><span class="eyebrow eyebrow-dark">ANALYSIS COMPLETE</span><h2>Crop guidance</h2></div></div><div class="result-content">{{ result | e | replace('\n', '<br>') | safe }}</div><p class="result-disclaimer">This is AI-generated guidance, not a confirmed diagnosis. Verify before taking action.</p><a class="smart-button smart-button-primary" href="{{ url_for('crop_doctor') }}">Analyze another image ↗</a></section>{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const input = document.getElementById('crop-image');
+  const label = document.getElementById('selected-image-name');
+  if (!input || !label) return;
+  input.addEventListener('change', () => {
+    const file = input.files && input.files[0];
+    label.textContent = file ? `${file.name} · ${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'No image selected';
+    if (file && file.size > 5 * 1024 * 1024) label.textContent = 'Image is too large — choose a file under 5 MB.';
+  });
+})();
+</script>
+{% endblock %}

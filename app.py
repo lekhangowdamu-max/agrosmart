@@ -1,11 +1,12 @@
 ﻿from sqlalchemy import text
+import base64
 import json
 import os
 from datetime import date, timedelta
 from types import SimpleNamespace
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 from flask import Flask, flash, redirect, render_template, render_template_string, request, url_for, send_from_directory
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
@@ -161,6 +162,8 @@ def create_app():
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
     app.config["GOOGLE_MAPS_API_KEY"] = os.environ.get("GOOGLE_MAPS_API_KEY", "").strip()
     app.config["OPENWEATHER_API_KEY"] = os.environ.get("OPENWEATHER_API_KEY", "").strip()
+    app.config["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY", "").strip()
+    app.config["OPENAI_MODEL"] = os.environ.get("OPENAI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
     configure_app(app)
     print("Environment loaded...")
     print("Connecting to database...")
@@ -333,7 +336,96 @@ def logout():
 @login_required
 def dashboard():
     profile_photo = current_user.photo if current_user.photo else None
-    return render_template("dashboard.html", user_location=current_user.location or "Not set", profile_photo=profile_photo)
+    try:
+        machinery_count = Machinery.query.count()
+        user_booking_count = Booking.query.filter_by(user_id=current_user.id).count()
+        pending_booking_count = Booking.query.filter_by(user_id=current_user.id, status="pending").count()
+        market_price_count = CropPrice.query.count()
+    except SQLAlchemyError:
+        app.logger.exception("Could not load dashboard summary metrics")
+        machinery_count = user_booking_count = pending_booking_count = market_price_count = 0
+    return render_template(
+        "dashboard.html",
+        user_location=current_user.location or "Not set",
+        profile_photo=profile_photo,
+        machinery_count=machinery_count,
+        user_booking_count=user_booking_count,
+        pending_booking_count=pending_booking_count,
+        market_price_count=market_price_count,
+    )
+
+
+@app.route("/crop-doctor", methods=["GET", "POST"])
+@login_required
+def crop_doctor():
+    """Analyze a crop photo using a configured vision-capable OpenAI model.
+
+    Uploaded images are processed in memory and are not saved to disk.
+    """
+    result = None
+    error = None
+    if request.method == "POST":
+        api_key = app.config.get("OPENAI_API_KEY", "")
+        if not api_key:
+            error = "AI Crop Doctor is not configured yet. Add OPENAI_API_KEY to your deployment environment, then redeploy."
+        else:
+            image_file = request.files.get("crop_image")
+            crop_name = (request.form.get("crop_name") or "Unknown crop").strip()[:100]
+            symptoms = (request.form.get("symptoms") or "").strip()[:1200]
+            if not image_file or not image_file.filename:
+                error = "Choose a clear crop or leaf photo first."
+            else:
+                image_bytes = image_file.read(5 * 1024 * 1024 + 1)
+                if len(image_bytes) > 5 * 1024 * 1024:
+                    error = "Image is too large. Please use an image smaller than 5 MB."
+                else:
+                    mime = (image_file.mimetype or "").lower()
+                    signatures = {
+                        "image/jpeg": image_bytes.startswith(b"\xff\xd8\xff"),
+                        "image/png": image_bytes.startswith(b"\x89PNG\r\n\x1a\n"),
+                        "image/webp": len(image_bytes) > 12 and image_bytes.startswith(b"RIFF") and image_bytes[8:12] == b"WEBP",
+                    }
+                    if mime not in signatures or not signatures[mime]:
+                        error = "Use a valid JPG, PNG, or WEBP image."
+                    else:
+                        prompt = (
+                            "You are an agricultural information assistant. Analyze the provided crop photo cautiously. "
+                            "Answer in simple language and, if possible, in Kannada when the user asks in Kannada; otherwise use English. "
+                            "Do not claim certainty from an image alone. Include: (1) visible observations, (2) possible causes ranked as possibilities, "
+                            "(3) safe immediate steps, (4) what additional information or expert inspection is needed, and (5) when to contact a local agriculture officer. "
+                            "Do not prescribe a pesticide dose or mix without verified crop, location, product label, and local guidance. "
+                            "If the image is unclear or insufficient, say so. This is guidance, not a confirmed diagnosis.\n"
+                            f"Crop reported by farmer: {crop_name}\nSymptoms / context: {symptoms or 'Not provided'}"
+                        )
+                        payload = {
+                            "model": app.config.get("OPENAI_MODEL", "gpt-4o-mini"),
+                            "messages": [{"role": "user", "content": [
+                                {"type": "text", "text": prompt},
+                                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{base64.b64encode(image_bytes).decode('ascii')}"}},
+                            ]}],
+                            "max_tokens": 900,
+                            "temperature": 0.2,
+                        }
+                        api_request = Request(
+                            "https://api.openai.com/v1/chat/completions",
+                            data=json.dumps(payload).encode("utf-8"),
+                            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                            method="POST",
+                        )
+                        try:
+                            with urlopen(api_request, timeout=45) as response:
+                                response_data = json.loads(response.read().decode("utf-8"))
+                            result = response_data["choices"][0]["message"]["content"].strip()
+                        except Exception as exc:
+                            # Do not return provider response bodies or secrets to the browser.
+                            app.logger.warning("Crop Doctor request failed: %s", type(exc).__name__)
+                            error = "The AI analysis could not be completed. Check the API key, model access, and network, then try again."
+    return render_template(
+        "crop_doctor.html",
+        result=result,
+        error=error,
+        ai_configured=bool(app.config.get("OPENAI_API_KEY")),
+    )
 
 
 @app.route("/bookings")

@@ -14,6 +14,7 @@
     <link rel="icon" href="/static/logo-uploaded.png" type="image/png">
     <title>{% block title %}AgroSmart{% endblock %}</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/advanced.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
@@ -83,6 +84,10 @@
                 <a href="/bookings">
                     <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 14h10v2H7zm0-4h10v2H7zm0-4h10v2H7zm12-2H5c-1.1 0-2 .9-2 2v14l4-4h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></span>
                     Bookings
+                </a>
+                <a href="/crop-doctor">
+                    <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.5 3.5C13 3.4 6.1 5.4 5.2 11.1c-.3 2.1.8 3.8 2.7 4.4 1.9.6 4.4-.2 6.5-2.2 2.7-2.7 4.6-6.4 6.1-9.8zM4 21c.7-4.5 3.5-7.8 8.2-10.4"/></svg></span>
+                    AI Crop Doctor
                 </a>
                 {% if role == 'admin' %}
                 <a href="/admin">

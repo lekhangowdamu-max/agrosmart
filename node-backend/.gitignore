@@ -1,9 +1,51 @@
-# Node Backend Git Ignore
-
-node_modules/
+# Environment variables
 .env
 .env.local
-.env.*.local
+.env.production.local
+.env.development.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv
+venv/
+ENV/
+env/
+.vscode/
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Build outputs
+dist/
+build/
+.next/
+out/
 
 # IDE
 .vscode/
@@ -12,39 +54,46 @@ node_modules/
 *.swo
 *~
 .DS_Store
-
-# Build
-dist/
-build/
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Runtime
-tmp/
-temp/
-
-# OS
 Thumbs.db
-.DS_Store
+
+# Vercel
+.vercel/
+.vercel
 
 # Testing
-coverage/
-.nyc_output/
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
+# OS
+.DS_Store
+Thumbs.db
+*.log
 
-# Uploads
-public/uploads/
-public/profiles/
+# Uploads (local)
+static/uploads/*
+!static/uploads/.gitkeep
 
-# Package Manager
-package-lock.json
-yarn.lock
+# Android
+AgroSmartAndroid/.gradle/
+AgroSmartAndroid/.idea/
+AgroSmartAndroid/local.properties
+AgroSmartAndroid/*/build/
+
+# Temp files
+app.py.tmp
+tempCodeRunnerFile.py
+*.tmp
+
+# Sensitive files
+*.pem
+*.key
+*.crt
+database/backups/
+
+# Local application databases and personal uploads
+instance/*.db
+instance/*.sqlite
+instance/*.sqlite3
+static/profiles/*
+!static/profiles/.gitkeep
